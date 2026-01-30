@@ -45,13 +45,13 @@ jobs:
       - name: Create .env file
         run: |
           echo "NEXT_PUBLIC_BASE_PATH=${{ steps.vars.outputs.BASE_PATH }}" > .env
-          echo "NEXT_PUBLIC_SOCKET_URL=http://77.42.70.58${{ steps.vars.outputs.BASE_PATH }}" >> .env
+          echo "NEXT_PUBLIC_SOCKET_URL=http://77.42.70.58" >> .env
 
       - name: Build application
         run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.vars.outputs.BASE_PATH }}
-          NEXT_PUBLIC_SOCKET_URL: http://77.42.70.58${{ steps.vars.outputs.BASE_PATH }}
+          NEXT_PUBLIC_SOCKET_URL: http://77.42.70.58
 
       - name: Prepare deployment package
         run: |

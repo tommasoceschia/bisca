@@ -21,6 +21,7 @@ interface RoomState {
 }
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions) {
   const [state, setState] = useState<RoomState>({
@@ -35,8 +36,10 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    // Connect to socket server
+    // Connect to socket server with custom path for basePath support
+    const socketPath = BASE_PATH ? `${BASE_PATH}/socket.io/` : "/socket.io/";
     const socket = io(SOCKET_URL, {
+      path: socketPath,
       transports: ["websocket", "polling"],
     });
     socketRef.current = socket;
