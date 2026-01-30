@@ -223,6 +223,9 @@ io.on("connection", (socket: Socket) => {
 
     socket.join(roomCode);
 
+    // Set playerId on socket for reliable lookup (fixes race condition)
+    (socket as any).playerId = playerId;
+
     // Send current state to joining player
     const playersArray = Array.from(room.players.values());
     socket.emit("room_state", {
@@ -513,7 +516,7 @@ function broadcastGameState(roomCode: string, state: GameState) {
   const room = rooms.get(roomCode);
   if (!room) return;
 
-  for (const player of room.gameState?.players || []) {
+  for (const player of state.players) {
     const socketsInRoom = io.sockets.adapter.rooms.get(roomCode);
     if (!socketsInRoom) continue;
 

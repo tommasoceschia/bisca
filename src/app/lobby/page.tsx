@@ -32,11 +32,11 @@ export default function LobbyPage() {
     }
     setNickname(savedNickname);
 
-    // Genera o recupera player ID
-    let id = localStorage.getItem("bisca_player_id");
+    // Genera o recupera player ID (sessionStorage = unico per tab)
+    let id = sessionStorage.getItem("bisca_player_id");
     if (!id) {
       id = generatePlayerId();
-      localStorage.setItem("bisca_player_id", id);
+      sessionStorage.setItem("bisca_player_id", id);
     }
     setPlayerId(id);
   }, [router]);

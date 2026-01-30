@@ -19,12 +19,6 @@ const SUIT_COLORS: Record<Suit, string> = {
   [Suit.SPADES]: "text-gray-900",
 };
 
-const SIZE_CLASSES = {
-  sm: "w-12 h-16 text-xs",
-  md: "w-16 h-24 text-sm",
-  lg: "w-24 h-36 text-base",
-};
-
 function getRankDisplay(rank: number): string {
   switch (rank) {
     case 1:
@@ -52,19 +46,26 @@ export function Card({
   const suitSymbol = SUIT_SYMBOLS[card.suit];
   const suitColor = SUIT_COLORS[card.suit];
 
+  // Mobile-first responsive sizes
+  const sizeClasses = {
+    sm: "w-10 h-14 sm:w-12 sm:h-16",
+    md: "w-12 h-[4.5rem] sm:w-14 sm:h-20 md:w-16 md:h-24",
+    lg: "w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-28",
+  };
+
   if (faceDown) {
     return (
       <div
         className={cn(
-          SIZE_CLASSES[size],
+          sizeClasses[size],
           "relative rounded-lg shadow-md border-2 border-blue-800",
           "bg-gradient-to-br from-blue-700 to-blue-900",
           "flex items-center justify-center",
           disabled && "opacity-50"
         )}
       >
-        <div className="absolute inset-2 border border-blue-400/30 rounded" />
-        <span className="text-blue-300 text-2xl">♠</span>
+        <div className="absolute inset-1 sm:inset-2 border border-blue-400/30 rounded" />
+        <span className="text-blue-300 text-xl sm:text-2xl">♠</span>
       </div>
     );
   }
@@ -74,38 +75,36 @@ export function Card({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        SIZE_CLASSES[size],
+        sizeClasses[size],
         "relative bg-white rounded-lg shadow-md border-2 transition-all duration-200",
         suitColor,
-        selected && "ring-2 ring-yellow-400 -translate-y-3 shadow-lg",
-        !disabled && !selected && "hover:-translate-y-1 hover:shadow-lg",
-        disabled && "opacity-50 cursor-not-allowed",
+        selected && "ring-2 ring-yellow-400 -translate-y-2 sm:-translate-y-3 shadow-lg",
+        !disabled && !selected && "hover:-translate-y-1 hover:shadow-lg active:scale-95",
+        disabled && "opacity-60 cursor-not-allowed",
         !disabled && "cursor-pointer"
       )}
     >
       {/* Top-left corner */}
-      <div className="absolute top-1 left-1 flex flex-col items-center leading-tight">
-        <span className="font-bold">{rankDisplay}</span>
-        <span className="text-lg -mt-1">{suitSymbol}</span>
+      <div className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1 flex flex-col items-center leading-none">
+        <span className="font-bold text-[10px] sm:text-xs md:text-sm">{rankDisplay}</span>
+        <span className="text-xs sm:text-sm md:text-base -mt-0.5">{suitSymbol}</span>
       </div>
 
       {/* Center symbol */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={cn("text-4xl", size === "sm" && "text-2xl", size === "lg" && "text-5xl")}>
-          {suitSymbol}
-        </span>
+        <span className="text-2xl sm:text-3xl md:text-4xl">{suitSymbol}</span>
       </div>
 
       {/* Bottom-right corner (rotated) */}
-      <div className="absolute bottom-1 right-1 flex flex-col items-center leading-tight rotate-180">
-        <span className="font-bold">{rankDisplay}</span>
-        <span className="text-lg -mt-1">{suitSymbol}</span>
+      <div className="absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 flex flex-col items-center leading-none rotate-180">
+        <span className="font-bold text-[10px] sm:text-xs md:text-sm">{rankDisplay}</span>
+        <span className="text-xs sm:text-sm md:text-base -mt-0.5">{suitSymbol}</span>
       </div>
 
       {/* Asso di Cuori indicator */}
       {card.suit === Suit.HEARTS && card.rank === 1 && (
-        <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
-          <span className="text-[8px] font-bold text-yellow-900">★</span>
+        <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+          <span className="text-[6px] sm:text-[8px] font-bold text-yellow-900">★</span>
         </div>
       )}
     </button>
@@ -114,23 +113,23 @@ export function Card({
 
 // Card back component for hidden cards
 export function CardBack({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+  const sizeClasses = {
+    sm: "w-10 h-14 sm:w-12 sm:h-16",
+    md: "w-12 h-[4.5rem] sm:w-14 sm:h-20 md:w-16 md:h-24",
+    lg: "w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-28",
+  };
+
   return (
     <div
       className={cn(
-        SIZE_CLASSES[size],
+        sizeClasses[size],
         "relative rounded-lg shadow-md border-2 border-blue-800",
         "bg-gradient-to-br from-blue-700 to-blue-900",
         "flex items-center justify-center"
       )}
     >
-      <div className="absolute inset-2 border border-blue-400/30 rounded" />
-      <div className="grid grid-cols-3 gap-0.5 opacity-30">
-        {[...Array(9)].map((_, i) => (
-          <span key={i} className="text-blue-300 text-xs">
-            ♠
-          </span>
-        ))}
-      </div>
+      <div className="absolute inset-1 sm:inset-2 border border-blue-400/30 rounded" />
+      <span className="text-blue-300 text-lg sm:text-xl">♠</span>
     </div>
   );
 }

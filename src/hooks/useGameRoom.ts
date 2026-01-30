@@ -79,10 +79,16 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
 
     // Player joined
     socket.on("player_joined", ({ player }) => {
-      setState((prev) => ({
-        ...prev,
-        players: [...prev.players, player],
-      }));
+      setState((prev) => {
+        // Evita duplicati
+        if (prev.players.some((p) => p.id === player.id)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          players: [...prev.players, player],
+        };
+      });
     });
 
     // Player disconnected

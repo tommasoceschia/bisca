@@ -30,10 +30,17 @@ export default function RoomPage({ params }: PageProps) {
 
   useEffect(() => {
     const savedNickname = localStorage.getItem("bisca_nickname");
-    const savedPlayerId = localStorage.getItem("bisca_player_id");
     const savedIsHost = localStorage.getItem("bisca_is_host") === "true";
 
-    if (!savedNickname || !savedPlayerId) {
+    // playerId unico per sessione/tab (sessionStorage)
+    let savedPlayerId = sessionStorage.getItem("bisca_player_id");
+    if (!savedPlayerId) {
+      // Genera nuovo ID basato su nickname + timestamp
+      savedPlayerId = `${savedNickname}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      sessionStorage.setItem("bisca_player_id", savedPlayerId);
+    }
+
+    if (!savedNickname) {
       router.push("/");
       return;
     }
@@ -191,17 +198,10 @@ export default function RoomPage({ params }: PageProps) {
         {/* Game in progress */}
         {gameState && gameState.phase !== GamePhase.WAITING && (
           <>
-            {/* Scoreboard */}
-            <div className="absolute top-20 right-4 z-10">
-              <ScoreBoard
-                players={gameState.players}
-                currentRound={gameState.currentRound}
-                showBets={gameState.phase !== GamePhase.BETTING}
-              />
-            </div>
-
-            {/* Turn indicator */}
-            <div className="text-center py-2">
+            {/* Header row with turn indicator and scoreboard */}
+            <div className="flex items-start justify-between px-4 py-2 gap-4">
+              {/* Turn indicator */}
+              <div className="flex-1">
               {gameState.phase === GamePhase.BETTING && (
                 <div className="text-green-200">
                   {isMyTurn ? (
@@ -234,6 +234,14 @@ export default function RoomPage({ params }: PageProps) {
               {gameState.phase === GamePhase.GAME_END && (
                 <div className="text-yellow-400 font-bold text-2xl">Partita terminata!</div>
               )}
+              </div>
+
+              {/* Scoreboard */}
+              <ScoreBoard
+                players={gameState.players}
+                currentRound={gameState.currentRound}
+                showBets={gameState.phase !== GamePhase.BETTING}
+              />
             </div>
 
             {/* Play area */}
