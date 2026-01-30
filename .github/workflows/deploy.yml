@@ -128,8 +128,8 @@ jobs:
           source .env
           set +a
 
-          # Start WebSocket server first
-          PORT=$WS_PORT CLIENT_URL=http://77.42.70.58$BASE_PATH pm2 start ./node_modules/.bin/tsx \
+          # Start WebSocket server first (CLIENT_URL is origin only for CORS)
+          PORT=$WS_PORT CLIENT_URL=http://77.42.70.58 pm2 start ./node_modules/.bin/tsx \
             --name $PM2_SERVER \
             -- server/index.ts
 
