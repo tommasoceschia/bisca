@@ -61,6 +61,8 @@ interface GameState {
   totalBets: number;
   aceOfHeartsPending: boolean;
   aceOfHeartsPlayerId: string | null;
+  readyForNextRound: string[];
+  lastRoundWinnerId: string | null;
 }
 
 // Game logic imports (will be duplicated for server - in production use shared package)
@@ -275,6 +277,8 @@ io.on("connection", (socket: Socket) => {
       totalBets: 0,
       aceOfHeartsPending: false,
       aceOfHeartsPlayerId: null,
+      readyForNextRound: [],
+      lastRoundWinnerId: null,
     };
 
     room.gameState = gameState;
@@ -320,6 +324,57 @@ io.on("connection", (socket: Socket) => {
     }
 
     // Broadcast to all
+    broadcastGameState(currentRoomCode, room.gameState);
+  });
+
+  socket.on("player_ready", () => {
+    if (!currentRoomCode || !currentPlayerId) return;
+
+    const room = rooms.get(currentRoomCode);
+    if (!room || !room.gameState) return;
+    if (room.gameState.phase !== GamePhase.ROUND_END) return;
+
+    // Add player to ready list if not already there
+    if (!room.gameState.readyForNextRound.includes(currentPlayerId)) {
+      room.gameState.readyForNextRound.push(currentPlayerId);
+    }
+
+    // Check if all players are ready
+    const allReady = room.gameState.players.every((p) =>
+      room.gameState!.readyForNextRound.includes(p.id)
+    );
+
+    if (allReady) {
+      // Start the next round
+      const winnerId = room.gameState.lastRoundWinnerId!;
+      room.gameState.currentRound++;
+      const nextCardsPerPlayer: number =
+        ROUND_STRUCTURE[room.gameState.currentRound];
+      room.gameState.cardsPerPlayer = nextCardsPerPlayer;
+      room.gameState.isBlindRound = nextCardsPerPlayer === 1;
+
+      const deckCount = calculateDeckCount(room.gameState.players.length);
+      const deck = createDeck(deckCount);
+      const hands = dealCards(
+        deck,
+        room.gameState.players.length,
+        nextCardsPerPlayer
+      );
+
+      for (let i = 0; i < room.gameState.players.length; i++) {
+        room.gameState.players[i].hand = hands[i];
+        room.gameState.players[i].bet = null;
+        room.gameState.players[i].tricksWon = 0;
+      }
+
+      room.gameState.phase = GamePhase.BETTING;
+      room.gameState.currentPlayerId = winnerId;
+      room.gameState.roundLeaderId = winnerId;
+      room.gameState.totalBets = 0;
+      room.gameState.readyForNextRound = [];
+      room.gameState.lastRoundWinnerId = null;
+    }
+
     broadcastGameState(currentRoomCode, room.gameState);
   });
 
@@ -377,31 +432,10 @@ io.on("connection", (socket: Socket) => {
         if (room.gameState.currentRound >= ROUND_STRUCTURE.length - 1) {
           room.gameState.phase = GamePhase.GAME_END;
         } else {
-          // Next round
-          room.gameState.currentRound++;
-          const nextCardsPerPlayer: number =
-            ROUND_STRUCTURE[room.gameState.currentRound];
-          room.gameState.cardsPerPlayer = nextCardsPerPlayer;
-          room.gameState.isBlindRound = nextCardsPerPlayer === 1;
-
-          const deckCount = calculateDeckCount(room.gameState.players.length);
-          const deck = createDeck(deckCount);
-          const hands = dealCards(
-            deck,
-            room.gameState.players.length,
-            nextCardsPerPlayer
-          );
-
-          for (let i = 0; i < room.gameState.players.length; i++) {
-            room.gameState.players[i].hand = hands[i];
-            room.gameState.players[i].bet = null;
-            room.gameState.players[i].tricksWon = 0;
-          }
-
-          room.gameState.phase = GamePhase.BETTING;
-          room.gameState.currentPlayerId = winnerId;
-          room.gameState.roundLeaderId = winnerId;
-          room.gameState.totalBets = 0;
+          // Go to ROUND_END phase - wait for players to click ready
+          room.gameState.phase = GamePhase.ROUND_END;
+          room.gameState.lastRoundWinnerId = winnerId;
+          room.gameState.readyForNextRound = [];
         }
 
         room.gameState.currentTrick = {

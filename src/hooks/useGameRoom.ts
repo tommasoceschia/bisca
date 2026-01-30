@@ -135,10 +135,15 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
     });
   }, []);
 
+  const markReady = useCallback(() => {
+    socketRef.current?.emit("player_ready");
+  }, []);
+
   return {
     ...state,
     startGame,
     placeBet,
     playCard,
+    markReady,
   };
 }

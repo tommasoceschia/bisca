@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Card as CardType } from "@/types/game";
+import { sortHandCards } from "@/lib/game/suit-hierarchy";
 import { Card } from "./Card";
 
 interface HandProps {
@@ -14,16 +15,18 @@ interface HandProps {
 export function Hand({ cards, selectedCardId, disabled = false, onCardClick }: HandProps) {
   if (cards.length === 0) {
     return (
-      <div className="flex justify-center items-center h-24 text-green-300/50">
+      <div className="flex justify-center items-center h-16 sm:h-24 text-green-300/50 text-sm">
         Nessuna carta in mano
       </div>
     );
   }
 
+  const sortedCards = sortHandCards(cards);
+
   return (
-    <div className="flex justify-center items-end px-2 overflow-x-auto">
-      <div className="flex gap-1 sm:gap-2 md:gap-3">
-        {cards.map((card) => (
+    <div className="flex justify-center items-end px-1 sm:px-2 overflow-x-auto">
+      <div className="flex gap-0.5 sm:gap-1 md:gap-2">
+        {sortedCards.map((card) => (
           <div
             key={card.id}
             className={cn(
@@ -55,31 +58,31 @@ interface BlindHandProps {
 export function BlindHand({ cardCount, selectedIndex, disabled = false, onCardClick }: BlindHandProps) {
   if (cardCount === 0) {
     return (
-      <div className="flex justify-center items-center h-24 text-green-300/50">
+      <div className="flex justify-center items-center h-16 sm:h-24 text-green-300/50 text-sm">
         Nessuna carta in mano
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center items-end gap-2 px-2">
+    <div className="flex justify-center items-end gap-1 sm:gap-2 px-1 sm:px-2">
       {[...Array(cardCount)].map((_, index) => (
         <button
           key={index}
           disabled={disabled}
           onClick={() => onCardClick?.(index)}
           className={cn(
-            "w-16 h-24 sm:w-20 sm:h-28 rounded-lg shadow-md border-2 border-blue-800",
+            "w-12 h-[4.5rem] sm:w-16 sm:h-24 rounded-lg shadow-md border-2 border-blue-800",
             "bg-gradient-to-br from-blue-700 to-blue-900",
             "flex items-center justify-center transition-all duration-200 flex-shrink-0",
-            selectedIndex === index && "ring-2 ring-yellow-400 -translate-y-3",
+            selectedIndex === index && "ring-2 ring-yellow-400 -translate-y-2 sm:-translate-y-3",
             !disabled && "hover:-translate-y-1 hover:shadow-lg cursor-pointer active:scale-95",
             disabled && "opacity-50 cursor-not-allowed"
           )}
         >
           <div className="text-center text-blue-300">
-            <div className="text-2xl sm:text-3xl mb-1">?</div>
-            <div className="text-[10px] sm:text-xs">Carta {index + 1}</div>
+            <div className="text-xl sm:text-2xl mb-0.5 sm:mb-1">?</div>
+            <div className="text-[8px] sm:text-[10px]">#{index + 1}</div>
           </div>
         </button>
       ))}

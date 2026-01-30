@@ -46,11 +46,11 @@ export function Card({
   const suitSymbol = SUIT_SYMBOLS[card.suit];
   const suitColor = SUIT_COLORS[card.suit];
 
-  // Mobile-first responsive sizes
+  // Mobile-first responsive sizes - more compact for mobile
   const sizeClasses = {
-    sm: "w-10 h-14 sm:w-12 sm:h-16",
-    md: "w-12 h-[4.5rem] sm:w-14 sm:h-20 md:w-16 md:h-24",
-    lg: "w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-28",
+    sm: "w-8 h-11 sm:w-10 sm:h-14",
+    md: "w-10 h-14 sm:w-12 sm:h-[4.5rem] md:w-14 md:h-20",
+    lg: "w-12 h-[4.5rem] sm:w-14 sm:h-20 md:w-16 md:h-24",
   };
 
   if (faceDown) {
@@ -114,9 +114,9 @@ export function Card({
 // Card back component for hidden cards
 export function CardBack({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const sizeClasses = {
-    sm: "w-10 h-14 sm:w-12 sm:h-16",
-    md: "w-12 h-[4.5rem] sm:w-14 sm:h-20 md:w-16 md:h-24",
-    lg: "w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-28",
+    sm: "w-8 h-11 sm:w-10 sm:h-14",
+    md: "w-10 h-14 sm:w-12 sm:h-[4.5rem] md:w-14 md:h-20",
+    lg: "w-12 h-[4.5rem] sm:w-14 sm:h-20 md:w-16 md:h-24",
   };
 
   return (

@@ -82,3 +82,30 @@ export function determineTrickWinner(cards: PlayedCard[]): string {
 export function isAceOfHearts(card: Card): boolean {
   return card.suit === Suit.HEARTS && card.rank === 1;
 }
+
+/**
+ * Confronta due carte per l'ordinamento della mano.
+ * Ordina dal peggiore al migliore (carte migliori a destra).
+ * Prima per seme (Picche < Fiori < Quadri < Cuori), poi per rank.
+ */
+export function compareCardsForSorting(a: Card, b: Card): number {
+  // Prima confronta i semi
+  const suitComparison = SUIT_POWER[a.suit] - SUIT_POWER[b.suit];
+
+  if (suitComparison !== 0) {
+    return suitComparison;
+  }
+
+  // Stesso seme: confronta i rank
+  const rankA = getEffectiveRank(a);
+  const rankB = getEffectiveRank(b);
+
+  return rankA - rankB;
+}
+
+/**
+ * Ordina le carte dal peggiore al migliore (migliori a destra).
+ */
+export function sortHandCards(cards: Card[]): Card[] {
+  return [...cards].sort(compareCardsForSorting);
+}

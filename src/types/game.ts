@@ -83,6 +83,8 @@ export interface GameState {
   totalBets: number;
   aceOfHeartsPending: boolean;
   aceOfHeartsPlayerId: string | null;
+  readyForNextRound: string[]; // Player IDs who clicked ready
+  lastRoundWinnerId: string | null; // Who won the last trick (leads next round)
 }
 
 export interface Room {
