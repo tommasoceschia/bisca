@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#15803d"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#f1f5f9"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad)"/>
+
+  <!-- Back card (offset) -->
+  <g transform="translate(256, 256) rotate(-8)">
+    <rect x="-85" y="-120" width="170" height="240" rx="12" fill="#1e3a5f" filter="url(#cardShadow)"/>
+    <rect x="-75" y="-110" width="150" height="220" rx="8" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+  </g>
+
+  <!-- Front card -->
+  <g transform="translate(256, 256) rotate(8)">
+    <rect x="-85" y="-120" width="170" height="240" rx="12" fill="url(#cardGrad)" filter="url(#cardShadow)"/>
+
+    <!-- Heart symbol - centered and prominent -->
+    <path d="M0 -20
+             C-15 -50, -55 -50, -55 -15
+             C-55 25, 0 70, 0 70
+             C0 70, 55 25, 55 -15
+             C55 -50, 15 -50, 0 -20 Z"
+          fill="#dc2626"/>
+
+    <!-- Corner indicators -->
+    <text x="-60" y="-75" font-family="Georgia, serif" font-size="32" font-weight="bold" fill="#dc2626">A</text>
+    <path d="M-60 -48 C-65 -58, -75 -58, -75 -48 C-75 -38, -60 -28, -60 -28 C-60 -28, -45 -38, -45 -48 C-45 -58, -55 -58, -60 -48 Z" fill="#dc2626"/>
+
+    <g transform="rotate(180)">
+      <text x="-60" y="-75" font-family="Georgia, serif" font-size="32" font-weight="bold" fill="#dc2626">A</text>
+      <path d="M-60 -48 C-65 -58, -75 -58, -75 -48 C-75 -38, -60 -28, -60 -28 C-60 -28, -45 -38, -45 -48 C-45 -58, -55 -58, -60 -48 Z" fill="#dc2626"/>
+    </g>
+  </g>
+</svg>
