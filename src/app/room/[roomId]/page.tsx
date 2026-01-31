@@ -31,6 +31,9 @@ export default function RoomPage({ params }: PageProps) {
   // Card waiting for ace choice
   const [pendingAceCard, setPendingAceCard] = useState<Card | null>(null);
 
+  // Prevent double card plays - cards disabled immediately on click
+  const [isPlayingCard, setIsPlayingCard] = useState(false);
+
   useEffect(() => {
     const savedNickname = localStorage.getItem("bisca_nickname");
     const savedIsHost = localStorage.getItem("bisca_is_host") === "true";
@@ -71,7 +74,14 @@ export default function RoomPage({ params }: PageProps) {
     nickname,
   });
 
+  // Reset isPlayingCard when game state changes (turn passes)
+  useEffect(() => {
+    setIsPlayingCard(false);
+  }, [gameState?.currentPlayerId, gameState?.currentTrick.cards.length]);
+
   const handleCardClick = (card: Card) => {
+    // Prevent any interaction if already playing a card
+    if (isPlayingCard) return;
     if (!gameState || gameState.currentPlayerId !== playerId) return;
     if (gameState.phase !== GamePhase.PLAYING) return;
 
@@ -81,22 +91,31 @@ export default function RoomPage({ params }: PageProps) {
       return;
     }
 
+    // Immediately disable all cards
+    setIsPlayingCard(true);
     playCard(card);
   };
 
   const handleAceChoice = (isHigh: boolean) => {
     if (pendingAceCard) {
+      // Immediately disable all cards
+      setIsPlayingCard(true);
       playCard(pendingAceCard, isHigh);
       setPendingAceCard(null);
     }
   };
 
   const handleBlindCardClick = (index: number) => {
+    // Prevent any interaction if already playing a card
+    if (isPlayingCard) return;
     if (!gameState || !myPlayer || gameState.currentPlayerId !== playerId) return;
     if (gameState.phase !== GamePhase.PLAYING) return;
 
     const card = myPlayer.hand[index];
     if (!card) return;
+
+    // Immediately disable all cards
+    setIsPlayingCard(true);
 
     // In blind round, non possiamo vedere la carta, ma se è l'asso di cuori
     // il sistema lo gestirà (potremmo non saperlo!)
@@ -277,13 +296,13 @@ export default function RoomPage({ params }: PageProps) {
               {gameState.isBlindRound ? (
                 <BlindHand
                   cardCount={myPlayer?.hand.length || 0}
-                  disabled={!isMyTurn || gameState.phase !== GamePhase.PLAYING}
+                  disabled={!isMyTurn || gameState.phase !== GamePhase.PLAYING || isPlayingCard}
                   onCardClick={handleBlindCardClick}
                 />
               ) : (
                 <Hand
                   cards={myPlayer?.hand || []}
-                  disabled={!isMyTurn || gameState.phase !== GamePhase.PLAYING}
+                  disabled={!isMyTurn || gameState.phase !== GamePhase.PLAYING || isPlayingCard}
                   onCardClick={handleCardClick}
                 />
               )}
