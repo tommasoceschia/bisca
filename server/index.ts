@@ -209,6 +209,44 @@ io.on("connection", (socket: Socket) => {
 
     const room = rooms.get(roomCode)!;
 
+    // Check if player is reconnecting (already exists in room)
+    const existingPlayer = room.players.get(playerId);
+    if (existingPlayer) {
+      // Player is reconnecting - update their status
+      existingPlayer.connected = true;
+      existingPlayer.nickname = nickname; // Update nickname in case it changed
+
+      socket.join(roomCode);
+      (socket as any).playerId = playerId;
+
+      console.log(`Player ${nickname} reconnected to room ${roomCode}`);
+
+      // Send current game state if game is in progress
+      if (room.gameState) {
+        // Update connected status in game state
+        const gamePlayer = room.gameState.players.find(p => p.id === playerId);
+        if (gamePlayer) {
+          gamePlayer.connected = true;
+        }
+
+        const personalizedState = personalizeGameState(room.gameState, playerId);
+        socket.emit("game_state", personalizedState);
+
+        // Also broadcast updated state to others so they see player reconnected
+        broadcastGameState(roomCode, room.gameState);
+      } else {
+        // Game not started yet, send room state
+        const playersArray = Array.from(room.players.values());
+        socket.emit("room_state", {
+          players: playersArray,
+          gameState: null,
+          isHost: playerId === room.hostId,
+        });
+      }
+      return;
+    }
+
+    // New player joining
     // Validate room capacity and game state
     if (room.players.size >= MAX_PLAYERS) {
       socket.emit("join_error", { message: "Stanza piena (max 10 giocatori)" });
@@ -219,7 +257,7 @@ io.on("connection", (socket: Socket) => {
       return;
     }
 
-    // Add player
+    // Add new player
     const isHost = room.players.size === 0;
     const player: Player = {
       id: playerId,
@@ -240,7 +278,7 @@ io.on("connection", (socket: Socket) => {
 
     socket.join(roomCode);
 
-    // Set playerId on socket for reliable lookup (fixes race condition)
+    // Set playerId on socket for reliable lookup
     (socket as any).playerId = playerId;
 
     // Send current state to joining player
@@ -299,16 +337,10 @@ io.on("connection", (socket: Socket) => {
 
     room.gameState = gameState;
 
-    // Send personalized state to each player (hide other hands)
-    for (const player of playersArray) {
-      const socketId = getSocketIdForPlayer(currentRoomCode, player.id);
-      if (socketId) {
-        const personalizedState = personalizeGameState(gameState, player.id);
-        io.to(socketId).emit("game_state", personalizedState);
-      }
-    }
+    console.log(`Game started in room ${currentRoomCode} with ${playersArray.length} players`);
 
-    console.log(`Game started in room ${currentRoomCode}`);
+    // Broadcast game state to all players in the room
+    broadcastGameState(currentRoomCode, gameState);
   });
 
   socket.on("place_bet", ({ bet }) => {
@@ -641,14 +673,25 @@ io.on("connection", (socket: Socket) => {
       case "reset_game": {
         // Return to waiting room
         room.gameState = null;
-        io.to(currentRoomCode).emit("game_reset");
-        // Notify all players with updated room state
+        console.log(`[${currentRoomCode}] Game reset by host`);
+
+        // Notify each player with correct isHost value
         const playersArray = Array.from(room.players.values());
-        io.to(currentRoomCode).emit("room_state", {
-          players: playersArray,
-          gameState: null,
-          isHost: false, // Will be corrected per-player
-        });
+        const socketsInRoom = io.sockets.adapter.rooms.get(currentRoomCode);
+        if (socketsInRoom) {
+          for (const socketId of socketsInRoom) {
+            const s = io.sockets.sockets.get(socketId);
+            if (s) {
+              const socketPlayerId = (s as any).playerId;
+              const isPlayerHost = socketPlayerId === room.hostId;
+              s.emit("room_state", {
+                players: playersArray,
+                gameState: null,
+                isHost: isPlayerHost,
+              });
+            }
+          }
+        }
         return;
       }
     }
@@ -737,18 +780,34 @@ function broadcastGameState(roomCode: string, state: GameState) {
   const room = rooms.get(roomCode);
   if (!room) return;
 
-  for (const player of state.players) {
-    const socketsInRoom = io.sockets.adapter.rooms.get(roomCode);
-    if (!socketsInRoom) continue;
+  const socketsInRoom = io.sockets.adapter.rooms.get(roomCode);
+  if (!socketsInRoom) {
+    console.log(`[${roomCode}] No sockets in room for broadcast`);
+    return;
+  }
 
-    const socketIds = Array.from(socketsInRoom);
-    for (const socketId of socketIds) {
-      const s = io.sockets.sockets.get(socketId);
-      if (s && (s as any).playerId === player.id) {
-        const personalizedState = personalizeGameState(state, player.id);
+  const socketIds = Array.from(socketsInRoom);
+  let sentCount = 0;
+
+  // Send to all connected sockets in the room
+  for (const socketId of socketIds) {
+    const s = io.sockets.sockets.get(socketId);
+    if (s) {
+      const socketPlayerId = (s as any).playerId;
+      // Find this player in the game state
+      const player = state.players.find(p => p.id === socketPlayerId);
+      if (player) {
+        const personalizedState = personalizeGameState(state, socketPlayerId);
         s.emit("game_state", personalizedState);
+        sentCount++;
+      } else {
+        console.log(`[${roomCode}] Socket ${socketId} has playerId ${socketPlayerId} not in game players`);
       }
     }
+  }
+
+  if (sentCount !== state.players.length) {
+    console.log(`[${roomCode}] Broadcast: sent to ${sentCount}/${state.players.length} players`);
   }
 }
 
