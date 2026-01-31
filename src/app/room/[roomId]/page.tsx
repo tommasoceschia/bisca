@@ -26,6 +26,7 @@ export default function RoomPage({ params }: PageProps) {
   const [playerId, setPlayerId] = useState("");
   const [isHost, setIsHost] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Card waiting for ace choice
   const [pendingAceCard, setPendingAceCard] = useState<Card | null>(null);
@@ -291,30 +292,48 @@ export default function RoomPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Admin panel (host only, during game) */}
+      {/* Admin panel toggle button (host only, during game) */}
       {isHost && gameState && gameState.phase !== GamePhase.WAITING && (
-        <div className="fixed bottom-4 left-4 z-20 bg-red-900/80 backdrop-blur-sm rounded-lg p-2 sm:p-3">
-          <div className="text-red-200 text-[10px] sm:text-xs mb-2 font-semibold">Admin</div>
-          <div className="flex flex-col gap-1 sm:gap-2">
-            <button
-              onClick={() => adminSkip("skip_turn")}
-              className="px-2 sm:px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-[10px] sm:text-xs rounded transition-colors"
-            >
-              Salta Turno
-            </button>
-            <button
-              onClick={() => adminSkip("skip_round")}
-              className="px-2 sm:px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-[10px] sm:text-xs rounded transition-colors"
-            >
-              Salta Round
-            </button>
-            <button
-              onClick={() => adminSkip("reset_game")}
-              className="px-2 sm:px-3 py-1 bg-red-800 hover:bg-red-700 text-white text-[10px] sm:text-xs rounded transition-colors"
-            >
-              Reset
-            </button>
-          </div>
+        <div className="fixed top-16 right-4 z-30">
+          <button
+            onClick={() => setShowAdminPanel(!showAdminPanel)}
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all shadow-lg",
+              showAdminPanel
+                ? "bg-red-600 text-white"
+                : "bg-red-900/80 text-red-200 hover:bg-red-800"
+            )}
+            title="Pannello Admin"
+          >
+            ⚙
+          </button>
+
+          {/* Admin panel dropdown */}
+          {showAdminPanel && (
+            <div className="absolute top-12 right-0 bg-red-900/95 backdrop-blur-sm rounded-lg p-3 shadow-xl border border-red-700/50 min-w-[140px]">
+              <div className="text-red-200 text-xs mb-2 font-semibold">Admin</div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { adminSkip("skip_turn"); setShowAdminPanel(false); }}
+                  className="px-3 py-2 bg-red-700 hover:bg-red-600 text-white text-sm rounded transition-colors text-left"
+                >
+                  Salta Turno
+                </button>
+                <button
+                  onClick={() => { adminSkip("skip_round"); setShowAdminPanel(false); }}
+                  className="px-3 py-2 bg-red-700 hover:bg-red-600 text-white text-sm rounded transition-colors text-left"
+                >
+                  Salta Round
+                </button>
+                <button
+                  onClick={() => { adminSkip("reset_game"); setShowAdminPanel(false); }}
+                  className="px-3 py-2 bg-red-800 hover:bg-red-700 text-white text-sm rounded transition-colors text-left"
+                >
+                  Reset Partita
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -24,24 +24,29 @@ export function ScoreBoard({ players, currentRound, isBettingPhase = false, play
   const cardsThisRound = ROUND_STRUCTURE[currentRound];
 
   return (
-    <div className="bg-black/40 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 min-w-0 sm:min-w-64 max-w-[50vw] sm:max-w-none">
-      <div className="flex justify-between items-center mb-1 sm:mb-3 text-green-200 text-[10px] sm:text-sm">
-        <span>R{currentRound + 1}/9</span>
-        <span>{cardsThisRound}🃏</span>
+    <div className="bg-black/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 min-w-[200px] sm:min-w-[280px] shadow-lg border border-green-800/30">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-3 pb-2 border-b border-green-700/50">
+        <span className="text-green-100 font-bold text-sm sm:text-base">
+          Round {currentRound + 1}/9
+        </span>
+        <span className="text-yellow-400 font-bold text-sm sm:text-base">
+          {cardsThisRound} 🃏
+        </span>
       </div>
 
-      <table className="w-full text-[10px] sm:text-sm">
+      <table className="w-full text-sm sm:text-base">
         <thead>
-          <tr className="text-green-300/70 text-left">
-            <th className="pb-1 sm:pb-2 hidden sm:table-cell">#</th>
-            <th className="pb-1 sm:pb-2">Nome</th>
-            <th className="pb-1 sm:pb-2 text-center">B</th>
-            <th className="pb-1 sm:pb-2 text-center">P</th>
-            <th className="pb-1 sm:pb-2 text-right">Pts</th>
+          <tr className="text-green-300 font-semibold">
+            <th className="pb-2 text-center w-8">#</th>
+            <th className="pb-2 text-left">Giocatore</th>
+            <th className="pb-2 text-center w-12" title="Scommessa">Bet</th>
+            <th className="pb-2 text-center w-12" title="Prese">Prese</th>
+            <th className="pb-2 text-center w-14">Punti</th>
           </tr>
         </thead>
         <tbody>
-          {orderedPlayers.map((player, idx) => {
+          {orderedPlayers.map((player) => {
             const ranked = rankedPlayers.find((r) => r.id === player.id)!;
             const betStatus = player.bet !== null
               ? player.tricksWon === player.bet
@@ -55,22 +60,22 @@ export function ScoreBoard({ players, currentRound, isBettingPhase = false, play
               <tr
                 key={player.id}
                 className={cn(
-                  "border-t border-green-800/30",
-                  !player.connected && "opacity-50"
+                  "border-t border-green-800/40",
+                  !player.connected && "opacity-40"
                 )}
               >
-                <td className="py-1 sm:py-2 text-green-400 hidden sm:table-cell">{ranked.rank}</td>
-                <td className={cn("py-1 sm:py-2 text-white truncate max-w-[60px] sm:max-w-none", player.isHost && "font-bold")}>
-                  {player.nickname.length > 6 ? player.nickname.slice(0, 6) + "…" : player.nickname}
-                  {player.isHost && <span className="hidden sm:inline"> 👑</span>}
+                <td className="py-2 text-center text-green-400 font-medium">{ranked.rank}</td>
+                <td className={cn("py-2 text-white truncate max-w-[100px]", player.isHost && "font-bold")}>
+                  {player.nickname.length > 10 ? player.nickname.slice(0, 10) + "…" : player.nickname}
+                  {player.isHost && " 👑"}
                 </td>
-                <td className={cn("py-1 sm:py-2 text-center", betStatus)}>
+                <td className={cn("py-2 text-center font-bold text-base sm:text-lg", betStatus)}>
                   {player.bet !== null ? player.bet : (isBettingPhase ? "?" : "-")}
                 </td>
-                <td className={cn("py-1 sm:py-2 text-center", betStatus)}>
+                <td className={cn("py-2 text-center font-bold text-base sm:text-lg", betStatus)}>
                   {player.tricksWon}
                 </td>
-                <td className="py-1 sm:py-2 text-right font-mono text-green-200">
+                <td className="py-2 text-center font-mono font-bold text-base sm:text-lg text-green-200">
                   {player.score >= 0 ? `+${player.score}` : player.score}
                 </td>
               </tr>

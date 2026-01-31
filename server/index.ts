@@ -316,31 +316,46 @@ io.on("connection", (socket: Socket) => {
 
     const room = rooms.get(currentRoomCode);
     if (!room || !room.gameState) return;
-    if (room.gameState.currentPlayerId !== currentPlayerId) return;
-    if (room.gameState.phase !== GamePhase.BETTING) return;
 
-    const playerIndex = room.gameState.players.findIndex(
-      (p) => p.id === currentPlayerId
-    );
-    if (playerIndex === -1) return;
-
-    // Update bet
-    room.gameState.players[playerIndex].bet = bet;
-    room.gameState.totalBets += bet;
-
-    // Check if all bets placed
-    const allBetsPlaced = room.gameState.players.every((p) => p.bet !== null);
-
-    if (allBetsPlaced) {
-      room.gameState.phase = GamePhase.PLAYING;
-      room.gameState.currentPlayerId = room.gameState.roundLeaderId;
-    } else {
-      const nextIndex = (playerIndex + 1) % room.gameState.players.length;
-      room.gameState.currentPlayerId = room.gameState.players[nextIndex].id;
+    // Mutex lock to prevent race conditions
+    if (room.processingAction) {
+      console.log(`[${currentRoomCode}] Action in progress, ignoring place_bet from ${currentPlayerId}`);
+      return;
     }
+    room.processingAction = true;
 
-    // Broadcast to all
-    broadcastGameState(currentRoomCode, room.gameState);
+    try {
+      if (room.gameState.currentPlayerId !== currentPlayerId) return;
+      if (room.gameState.phase !== GamePhase.BETTING) return;
+
+      const playerIndex = room.gameState.players.findIndex(
+        (p) => p.id === currentPlayerId
+      );
+      if (playerIndex === -1) return;
+
+      // Update bet
+      room.gameState.players[playerIndex].bet = bet;
+      room.gameState.totalBets += bet;
+
+      console.log(`[${currentRoomCode}] Bet placed by ${currentPlayerId}: ${bet}, total: ${room.gameState.totalBets}`);
+
+      // Check if all bets placed
+      const allBetsPlaced = room.gameState.players.every((p) => p.bet !== null);
+
+      if (allBetsPlaced) {
+        console.log(`[${currentRoomCode}] All bets placed, transitioning to PLAYING`);
+        room.gameState.phase = GamePhase.PLAYING;
+        room.gameState.currentPlayerId = room.gameState.roundLeaderId;
+      } else {
+        const nextIndex = (playerIndex + 1) % room.gameState.players.length;
+        room.gameState.currentPlayerId = room.gameState.players[nextIndex].id;
+      }
+
+      // Broadcast to all
+      broadcastGameState(currentRoomCode, room.gameState);
+    } finally {
+      room.processingAction = false;
+    }
   });
 
   socket.on("player_ready", () => {

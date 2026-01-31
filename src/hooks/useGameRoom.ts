@@ -35,6 +35,7 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
 
   const socketRef = useRef<Socket | null>(null);
   const playingRef = useRef(false); // Debounce for card plays
+  const bettingRef = useRef(false); // Debounce for bets
 
   useEffect(() => {
     // Connect to socket server with custom path for basePath support
@@ -119,6 +120,10 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
 
     // Game state update
     socket.on("game_state", (gameState: GameState) => {
+      // Reset debounce refs when phase changes
+      playingRef.current = false;
+      bettingRef.current = false;
+
       setState((prev) => ({
         ...prev,
         gameState,
@@ -138,7 +143,16 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
   }, []);
 
   const placeBet = useCallback((bet: number) => {
+    // Debounce: prevent double bet placement
+    if (bettingRef.current) return;
+    bettingRef.current = true;
+
     socketRef.current?.emit("place_bet", { bet });
+
+    // Reset after 1 second
+    setTimeout(() => {
+      bettingRef.current = false;
+    }, 1000);
   }, []);
 
   const playCard = useCallback((card: Card, aceIsHigh?: boolean) => {
