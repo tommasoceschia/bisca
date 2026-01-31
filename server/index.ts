@@ -148,10 +148,13 @@ function dealCards(
 }
 
 function getEffectiveRank(card: PlayedCard): number {
+  // Ace of Hearts: can be high (14) or low (0) based on player choice
   if (card.suit === Suit.HEARTS && card.rank === 1) {
     return card.aceIsHigh ? 14 : 0;
   }
-  return card.rank === 1 ? 14 : card.rank;
+  // Regular Aces (non-Hearts): always lowest (rank 1, worse than 2)
+  // All other cards keep their rank (2-13)
+  return card.rank;
 }
 
 function determineTrickWinner(cards: PlayedCard[]): string {

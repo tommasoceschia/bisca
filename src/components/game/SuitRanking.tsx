@@ -41,7 +41,7 @@ export function SuitRanking() {
 
             <div>
               <span className="text-green-400 font-semibold">Carte:</span>{" "}
-              A &gt; K &gt; Q &gt; J &gt; 10...2
+              K &gt; Q &gt; J &gt; 10...2 &gt; A
             </div>
 
             <div>

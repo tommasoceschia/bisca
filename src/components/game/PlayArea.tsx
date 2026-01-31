@@ -11,12 +11,14 @@ interface PlayAreaProps {
   winnerId?: string | null;
 }
 
-// Helper to get effective rank for ace of hearts
+// Helper to get effective rank
 function getEffectiveRank(card: PlayedCard): number {
+  // Ace of Hearts: can be high (14) or low (0) based on player choice
   if (card.suit === Suit.HEARTS && card.rank === 1) {
     return card.aceIsHigh ? 14 : 0;
   }
-  return card.rank === 1 ? 14 : card.rank;
+  // Regular Aces (non-Hearts): always lowest (rank 1, worse than 2)
+  return card.rank;
 }
 
 export function PlayArea({ playedCards, players, winnerId }: PlayAreaProps) {

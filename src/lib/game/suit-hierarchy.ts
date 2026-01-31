@@ -13,6 +13,7 @@ export function compareSuits(a: Suit, b: Suit): number {
 /**
  * Calcola il rank effettivo di una carta.
  * L'Asso di Cuori può essere alto (14) o basso (0) in base alla scelta del giocatore.
+ * Gli altri Assi valgono sempre 1 (il più basso, peggio del 2).
  */
 export function getEffectiveRank(card: Card | PlayedCard, aceIsHigh?: boolean): number {
   // Asso di Cuori: scelta del giocatore
@@ -24,11 +25,8 @@ export function getEffectiveRank(card: Card | PlayedCard, aceIsHigh?: boolean): 
     return aceIsHigh ? 14 : 0;
   }
 
-  // Asso normale (non di cuori): vale 14 (più alto del Re)
-  if (card.rank === 1) {
-    return 14;
-  }
-
+  // Asso normale (non di cuori): vale 1 (il più basso, peggio del 2)
+  // Tutte le altre carte mantengono il loro rank (2-13)
   return card.rank;
 }
 
