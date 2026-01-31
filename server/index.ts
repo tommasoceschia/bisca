@@ -63,6 +63,7 @@ interface GameState {
   aceOfHeartsPlayerId: string | null;
   readyForNextRound: string[];
   lastRoundWinnerId: string | null;
+  playOrder: string[]; // Order of play (first player leads)
 }
 
 // Game logic imports (will be duplicated for server - in production use shared package)
@@ -81,9 +82,12 @@ interface Room {
   players: Map<string, Player>;
   gameState: GameState | null;
   hostId: string | null;
+  processingAction: boolean; // Mutex lock to prevent double plays
 }
 
 const rooms = new Map<string, Room>();
+
+const MAX_PLAYERS = 10;
 
 // Create HTTP server and Socket.io
 const httpServer = http.createServer();
@@ -199,10 +203,21 @@ io.on("connection", (socket: Socket) => {
         players: new Map(),
         gameState: null,
         hostId: null,
+        processingAction: false,
       });
     }
 
     const room = rooms.get(roomCode)!;
+
+    // Validate room capacity and game state
+    if (room.players.size >= MAX_PLAYERS) {
+      socket.emit("join_error", { message: "Stanza piena (max 10 giocatori)" });
+      return;
+    }
+    if (room.gameState && room.gameState.phase !== GamePhase.WAITING) {
+      socket.emit("join_error", { message: "Partita già iniziata" });
+      return;
+    }
 
     // Add player
     const isHost = room.players.size === 0;
@@ -279,6 +294,7 @@ io.on("connection", (socket: Socket) => {
       aceOfHeartsPlayerId: null,
       readyForNextRound: [],
       lastRoundWinnerId: null,
+      playOrder: playersArray.map((p) => p.id),
     };
 
     room.gameState = gameState;
@@ -383,25 +399,38 @@ io.on("connection", (socket: Socket) => {
 
     const room = rooms.get(currentRoomCode);
     if (!room || !room.gameState) return;
-    if (room.gameState.currentPlayerId !== currentPlayerId) return;
-    if (room.gameState.phase !== GamePhase.PLAYING) return;
 
-    const playerIndex = room.gameState.players.findIndex(
-      (p) => p.id === currentPlayerId
-    );
-    if (playerIndex === -1) return;
+    // Mutex lock to prevent double card plays
+    if (room.processingAction) {
+      console.log(`[${currentRoomCode}] Action in progress, ignoring play_card from ${currentPlayerId}`);
+      return;
+    }
+    room.processingAction = true;
 
-    const player = room.gameState.players[playerIndex];
-    const cardIndex = player.hand.findIndex((c) => c.id === cardId);
-    if (cardIndex === -1) return;
+    try {
+      if (room.gameState.currentPlayerId !== currentPlayerId) {
+        return;
+      }
+      if (room.gameState.phase !== GamePhase.PLAYING) {
+        return;
+      }
 
-    const card = player.hand.splice(cardIndex, 1)[0];
-    const playedCard: PlayedCard = {
-      ...card,
-      playerId: currentPlayerId,
-      aceIsHigh:
-        card.suit === Suit.HEARTS && card.rank === 1 ? aceIsHigh : undefined,
-    };
+      const playerIndex = room.gameState.players.findIndex(
+        (p) => p.id === currentPlayerId
+      );
+      if (playerIndex === -1) return;
+
+      const player = room.gameState.players[playerIndex];
+      const cardIndex = player.hand.findIndex((c) => c.id === cardId);
+      if (cardIndex === -1) return;
+
+      const card = player.hand.splice(cardIndex, 1)[0];
+      const playedCard: PlayedCard = {
+        ...card,
+        playerId: currentPlayerId,
+        aceIsHigh:
+          card.suit === Suit.HEARTS && card.rank === 1 ? aceIsHigh : undefined,
+      };
 
     // Add to trick
     room.gameState.currentTrick.cards.push(playedCard);
@@ -420,6 +449,13 @@ io.on("connection", (socket: Socket) => {
         (p) => p.id === winnerId
       );
       room.gameState.players[winnerIndex].tricksWon++;
+
+      // Rotate playOrder so winner is first
+      const winnerPlayOrderIdx = room.gameState.playOrder.indexOf(winnerId);
+      room.gameState.playOrder = [
+        ...room.gameState.playOrder.slice(winnerPlayOrderIdx),
+        ...room.gameState.playOrder.slice(0, winnerPlayOrderIdx),
+      ];
 
       // Check if round is complete
       if (room.gameState.players[0].hand.length === 0) {
@@ -464,6 +500,142 @@ io.on("connection", (socket: Socket) => {
       // Next player
       const nextIndex = (playerIndex + 1) % room.gameState.players.length;
       room.gameState.currentPlayerId = room.gameState.players[nextIndex].id;
+    }
+
+    broadcastGameState(currentRoomCode, room.gameState);
+    } finally {
+      room.processingAction = false;
+    }
+  });
+
+  // Admin skip actions (host only)
+  socket.on("admin_skip", ({ action }) => {
+    if (!currentRoomCode || !currentPlayerId) return;
+
+    const room = rooms.get(currentRoomCode);
+    if (!room || !room.gameState) return;
+
+    // Only host can use admin actions
+    if (room.hostId !== currentPlayerId) {
+      socket.emit("admin_error", { message: "Solo l'host può usare questa funzione" });
+      return;
+    }
+
+    console.log(`[${currentRoomCode}] Admin action: ${action} by ${currentPlayerId}`);
+
+    switch (action) {
+      case "skip_turn": {
+        // Auto-play for current player
+        const currentPlayer = room.gameState.players.find(
+          (p) => p.id === room.gameState!.currentPlayerId
+        );
+        if (!currentPlayer) return;
+
+        if (room.gameState.phase === GamePhase.BETTING) {
+          // Auto-bet 0
+          currentPlayer.bet = 0;
+          const allBetsPlaced = room.gameState.players.every((p) => p.bet !== null);
+          if (allBetsPlaced) {
+            room.gameState.phase = GamePhase.PLAYING;
+            room.gameState.currentPlayerId = room.gameState.roundLeaderId;
+          } else {
+            const playerIndex = room.gameState.players.indexOf(currentPlayer);
+            const nextIndex = (playerIndex + 1) % room.gameState.players.length;
+            room.gameState.currentPlayerId = room.gameState.players[nextIndex].id;
+          }
+        } else if (room.gameState.phase === GamePhase.PLAYING && currentPlayer.hand.length > 0) {
+          // Auto-play first card
+          const card = currentPlayer.hand.shift()!;
+          const playedCard: PlayedCard = {
+            ...card,
+            playerId: currentPlayer.id,
+            aceIsHigh: card.suit === Suit.HEARTS && card.rank === 1 ? true : undefined,
+          };
+          room.gameState.currentTrick.cards.push(playedCard);
+          if (!room.gameState.currentTrick.leadSuit) {
+            room.gameState.currentTrick.leadSuit = playedCard.suit;
+          }
+
+          // Check if trick complete
+          if (room.gameState.currentTrick.cards.length === room.gameState.players.length) {
+            const winnerId = determineTrickWinner(room.gameState.currentTrick.cards);
+            room.gameState.currentTrick.winnerId = winnerId;
+            const winnerIndex = room.gameState.players.findIndex((p) => p.id === winnerId);
+            room.gameState.players[winnerIndex].tricksWon++;
+
+            // Rotate playOrder
+            const winnerPlayOrderIdx = room.gameState.playOrder.indexOf(winnerId);
+            room.gameState.playOrder = [
+              ...room.gameState.playOrder.slice(winnerPlayOrderIdx),
+              ...room.gameState.playOrder.slice(0, winnerPlayOrderIdx),
+            ];
+
+            // Check if round complete
+            if (room.gameState.players[0].hand.length === 0) {
+              for (const p of room.gameState.players) {
+                p.score += calculateRoundScore(p.bet!, p.tricksWon);
+              }
+              if (room.gameState.currentRound >= ROUND_STRUCTURE.length - 1) {
+                room.gameState.phase = GamePhase.GAME_END;
+              } else {
+                room.gameState.phase = GamePhase.ROUND_END;
+                room.gameState.lastRoundWinnerId = winnerId;
+                room.gameState.readyForNextRound = [];
+              }
+              room.gameState.currentTrick = { cards: [], leadSuit: null, winnerId: null };
+            } else {
+              // Next trick after delay
+              setTimeout(() => {
+                if (room.gameState) {
+                  room.gameState.currentTrick = { cards: [], leadSuit: null, winnerId: null };
+                  room.gameState.currentPlayerId = winnerId;
+                  broadcastGameState(currentRoomCode!, room.gameState);
+                }
+              }, 500);
+              broadcastGameState(currentRoomCode, room.gameState);
+              return;
+            }
+          } else {
+            const playerIndex = room.gameState.players.indexOf(currentPlayer);
+            const nextIndex = (playerIndex + 1) % room.gameState.players.length;
+            room.gameState.currentPlayerId = room.gameState.players[nextIndex].id;
+          }
+        }
+        break;
+      }
+
+      case "skip_round": {
+        // End the round immediately, calculate scores based on current state
+        for (const p of room.gameState.players) {
+          if (p.bet !== null) {
+            p.score += calculateRoundScore(p.bet, p.tricksWon);
+          }
+        }
+
+        if (room.gameState.currentRound >= ROUND_STRUCTURE.length - 1) {
+          room.gameState.phase = GamePhase.GAME_END;
+        } else {
+          room.gameState.phase = GamePhase.ROUND_END;
+          room.gameState.lastRoundWinnerId = room.gameState.currentPlayerId || room.gameState.players[0].id;
+          room.gameState.readyForNextRound = [];
+        }
+        room.gameState.currentTrick = { cards: [], leadSuit: null, winnerId: null };
+        break;
+      }
+
+      case "reset_game": {
+        // Return to waiting room
+        room.gameState = null;
+        io.to(currentRoomCode).emit("game_reset");
+        // Notify all players with updated room state
+        const playersArray = Array.from(room.players.values());
+        io.to(currentRoomCode).emit("room_state", {
+          players: playersArray,
+          gameState: null,
+          isHost: false, // Will be corrected per-player
+        });
+        return;
+      }
     }
 
     broadcastGameState(currentRoomCode, room.gameState);

@@ -63,6 +63,7 @@ export default function RoomPage({ params }: PageProps) {
     placeBet,
     playCard,
     markReady,
+    adminSkip,
   } = useGameRoom({
     roomCode: roomId,
     playerId,
@@ -246,6 +247,7 @@ export default function RoomPage({ params }: PageProps) {
                 players={gameState.players}
                 currentRound={gameState.currentRound}
                 isBettingPhase={gameState.phase === GamePhase.BETTING}
+                playOrder={gameState.playOrder}
               />
             </div>
 
@@ -288,6 +290,44 @@ export default function RoomPage({ params }: PageProps) {
           </div>
         )}
       </div>
+
+      {/* Admin panel (host only, during game) */}
+      {isHost && gameState && gameState.phase !== GamePhase.WAITING && (
+        <div className="fixed bottom-4 left-4 z-20 bg-red-900/80 backdrop-blur-sm rounded-lg p-2 sm:p-3">
+          <div className="text-red-200 text-[10px] sm:text-xs mb-2 font-semibold">Admin</div>
+          <div className="flex flex-col gap-1 sm:gap-2">
+            <button
+              onClick={() => adminSkip("skip_turn")}
+              className="px-2 sm:px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-[10px] sm:text-xs rounded transition-colors"
+            >
+              Salta Turno
+            </button>
+            <button
+              onClick={() => adminSkip("skip_round")}
+              className="px-2 sm:px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-[10px] sm:text-xs rounded transition-colors"
+            >
+              Salta Round
+            </button>
+            <button
+              onClick={() => adminSkip("reset_game")}
+              className="px-2 sm:px-3 py-1 bg-red-800 hover:bg-red-700 text-white text-[10px] sm:text-xs rounded transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Prominent turn indicator overlay */}
+      {isMyTurn && gameState && (gameState.phase === GamePhase.PLAYING || gameState.phase === GamePhase.BETTING) && (
+        <div className="fixed inset-x-0 top-1/4 flex justify-center z-50 pointer-events-none">
+          <div className="bg-yellow-500 text-yellow-900 px-6 py-3 sm:px-8 sm:py-4 rounded-2xl shadow-2xl animate-pulse">
+            <span className="text-xl sm:text-2xl md:text-3xl font-bold">
+              {gameState.phase === GamePhase.BETTING ? "SCOMMETTI!" : "TOCCA A TE!"}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Ace of Hearts modal */}
       {pendingAceCard && (

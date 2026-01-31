@@ -8,12 +8,18 @@ interface ScoreBoardProps {
   players: Player[];
   currentRound: number;
   isBettingPhase?: boolean;
+  playOrder?: string[]; // Display order (winner leads)
 }
 
-export function ScoreBoard({ players, currentRound, isBettingPhase = false }: ScoreBoardProps) {
+export function ScoreBoard({ players, currentRound, isBettingPhase = false, playOrder }: ScoreBoardProps) {
   const rankedPlayers = rankPlayers(
     players.map((p) => ({ id: p.id, nickname: p.nickname, score: p.score }))
   );
+
+  // Order players by playOrder if provided, otherwise by score rank
+  const orderedPlayers = playOrder
+    ? playOrder.map((id) => players.find((p) => p.id === id)!).filter(Boolean)
+    : rankedPlayers.map((r) => players.find((p) => p.id === r.id)!);
 
   const cardsThisRound = ROUND_STRUCTURE[currentRound];
 
@@ -35,8 +41,8 @@ export function ScoreBoard({ players, currentRound, isBettingPhase = false }: Sc
           </tr>
         </thead>
         <tbody>
-          {rankedPlayers.map((ranked) => {
-            const player = players.find((p) => p.id === ranked.id)!;
+          {orderedPlayers.map((player, idx) => {
+            const ranked = rankedPlayers.find((r) => r.id === player.id)!;
             const betStatus = player.bet !== null
               ? player.tricksWon === player.bet
                 ? "text-green-400"

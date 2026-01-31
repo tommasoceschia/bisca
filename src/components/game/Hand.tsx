@@ -72,7 +72,7 @@ export function BlindHand({ cardCount, selectedIndex, disabled = false, onCardCl
           disabled={disabled}
           onClick={() => onCardClick?.(index)}
           className={cn(
-            "w-12 h-[4.5rem] sm:w-16 sm:h-24 rounded-lg shadow-md border-2 border-blue-800",
+            "w-16 h-24 sm:w-20 sm:h-28 md:w-24 md:h-32 rounded-lg shadow-md border-2 border-blue-800",
             "bg-gradient-to-br from-blue-700 to-blue-900",
             "flex items-center justify-center transition-all duration-200 flex-shrink-0",
             selectedIndex === index && "ring-2 ring-yellow-400 -translate-y-2 sm:-translate-y-3",
@@ -81,8 +81,8 @@ export function BlindHand({ cardCount, selectedIndex, disabled = false, onCardCl
           )}
         >
           <div className="text-center text-blue-300">
-            <div className="text-xl sm:text-2xl mb-0.5 sm:mb-1">?</div>
-            <div className="text-[8px] sm:text-[10px]">#{index + 1}</div>
+            <div className="text-2xl sm:text-3xl mb-0.5 sm:mb-1">?</div>
+            <div className="text-[10px] sm:text-xs">#{index + 1}</div>
           </div>
         </button>
       ))}

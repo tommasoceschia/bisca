@@ -34,6 +34,7 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
   });
 
   const socketRef = useRef<Socket | null>(null);
+  const playingRef = useRef(false); // Debounce for card plays
 
   useEffect(() => {
     // Connect to socket server with custom path for basePath support
@@ -67,6 +68,18 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
     socket.on("disconnect", () => {
       console.log("Disconnected from server");
       setState((prev) => ({ ...prev, connected: false }));
+    });
+
+    // Join error handler (room full or game already started)
+    socket.on("join_error", ({ message }) => {
+      console.error("Join error:", message);
+      setState((prev) => ({ ...prev, error: message }));
+    });
+
+    // Game reset (admin action)
+    socket.on("game_reset", () => {
+      console.log("Game reset by admin");
+      setState((prev) => ({ ...prev, gameState: null }));
     });
 
     // Room state (initial)
@@ -129,14 +142,27 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
   }, []);
 
   const playCard = useCallback((card: Card, aceIsHigh?: boolean) => {
+    // Debounce: prevent double card plays
+    if (playingRef.current) return;
+    playingRef.current = true;
+
     socketRef.current?.emit("play_card", {
       cardId: card.id,
       aceIsHigh: isAceOfHearts(card) ? aceIsHigh : undefined,
     });
+
+    // Reset after 1 second (server will process and change turn)
+    setTimeout(() => {
+      playingRef.current = false;
+    }, 1000);
   }, []);
 
   const markReady = useCallback(() => {
     socketRef.current?.emit("player_ready");
+  }, []);
+
+  const adminSkip = useCallback((action: "skip_turn" | "skip_round" | "reset_game") => {
+    socketRef.current?.emit("admin_skip", { action });
   }, []);
 
   return {
@@ -145,5 +171,6 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
     placeBet,
     playCard,
     markReady,
+    adminSkip,
   };
 }

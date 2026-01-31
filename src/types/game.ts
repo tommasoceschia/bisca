@@ -85,6 +85,7 @@ export interface GameState {
   aceOfHeartsPlayerId: string | null;
   readyForNextRound: string[]; // Player IDs who clicked ready
   lastRoundWinnerId: string | null; // Who won the last trick (leads next round)
+  playOrder: string[]; // Order of play (first player leads, rotates after each trick)
 }
 
 export interface Room {

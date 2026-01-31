@@ -46,11 +46,11 @@ export function Card({
   const suitSymbol = SUIT_SYMBOLS[card.suit];
   const suitColor = SUIT_COLORS[card.suit];
 
-  // Mobile-first responsive sizes - more compact for mobile
+  // Mobile-first responsive sizes - larger for better visibility
   const sizeClasses = {
-    sm: "w-8 h-11 sm:w-10 sm:h-14",
-    md: "w-10 h-14 sm:w-12 sm:h-[4.5rem] md:w-14 md:h-20",
-    lg: "w-12 h-[4.5rem] sm:w-14 sm:h-20 md:w-16 md:h-24",
+    sm: "w-14 h-20 sm:w-16 sm:h-24",
+    md: "w-16 h-24 sm:w-20 sm:h-28 md:w-24 md:h-32",
+    lg: "w-20 h-28 sm:w-24 sm:h-32 md:w-28 md:h-36 lg:w-32 lg:h-44",
   };
 
   if (faceDown) {
@@ -86,19 +86,19 @@ export function Card({
     >
       {/* Top-left corner */}
       <div className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1 flex flex-col items-center leading-none">
-        <span className="font-bold text-[10px] sm:text-xs md:text-sm">{rankDisplay}</span>
-        <span className="text-xs sm:text-sm md:text-base -mt-0.5">{suitSymbol}</span>
+        <span className="font-bold text-xs sm:text-sm md:text-base">{rankDisplay}</span>
+        <span className="text-sm sm:text-base md:text-lg -mt-0.5">{suitSymbol}</span>
       </div>
 
       {/* Center symbol */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl sm:text-3xl md:text-4xl">{suitSymbol}</span>
+        <span className="text-3xl sm:text-4xl md:text-5xl">{suitSymbol}</span>
       </div>
 
       {/* Bottom-right corner (rotated) */}
       <div className="absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 flex flex-col items-center leading-none rotate-180">
-        <span className="font-bold text-[10px] sm:text-xs md:text-sm">{rankDisplay}</span>
-        <span className="text-xs sm:text-sm md:text-base -mt-0.5">{suitSymbol}</span>
+        <span className="font-bold text-xs sm:text-sm md:text-base">{rankDisplay}</span>
+        <span className="text-sm sm:text-base md:text-lg -mt-0.5">{suitSymbol}</span>
       </div>
 
       {/* Asso di Cuori indicator */}
@@ -114,9 +114,9 @@ export function Card({
 // Card back component for hidden cards
 export function CardBack({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const sizeClasses = {
-    sm: "w-8 h-11 sm:w-10 sm:h-14",
-    md: "w-10 h-14 sm:w-12 sm:h-[4.5rem] md:w-14 md:h-20",
-    lg: "w-12 h-[4.5rem] sm:w-14 sm:h-20 md:w-16 md:h-24",
+    sm: "w-14 h-20 sm:w-16 sm:h-24",
+    md: "w-16 h-24 sm:w-20 sm:h-28 md:w-24 md:h-32",
+    lg: "w-20 h-28 sm:w-24 sm:h-32 md:w-28 md:h-36 lg:w-32 lg:h-44",
   };
 
   return (
@@ -129,7 +129,7 @@ export function CardBack({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
       )}
     >
       <div className="absolute inset-1 sm:inset-2 border border-blue-400/30 rounded" />
-      <span className="text-blue-300 text-lg sm:text-xl">♠</span>
+      <span className="text-blue-300 text-xl sm:text-2xl">♠</span>
     </div>
   );
 }
