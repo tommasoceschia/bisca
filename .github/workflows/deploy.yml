@@ -16,11 +16,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Set environment variables
         id: vars
@@ -40,7 +45,7 @@ jobs:
           fi
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Create .env file
         run: |
@@ -48,7 +53,7 @@ jobs:
           echo "NEXT_PUBLIC_SOCKET_URL=http://${{ secrets.SERVER_IP }}" >> .env
 
       - name: Build application
-        run: npm run build
+        run: pnpm run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.vars.outputs.BASE_PATH }}
           NEXT_PUBLIC_SOCKET_URL: http://${{ secrets.SERVER_IP }}
