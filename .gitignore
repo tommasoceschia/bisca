@@ -43,3 +43,4 @@ coverage/
 *.pid
 *.seed
 *.pid.lock
+scripts/setup-branch-protection.sh
