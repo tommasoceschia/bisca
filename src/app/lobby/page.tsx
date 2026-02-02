@@ -89,6 +89,20 @@ export default function LobbyPage() {
           </button>
         </div>
 
+        {/* Local Game */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white mb-4">Gioca in locale</h2>
+          <p className="text-green-200/80 text-sm mb-4">
+            Gioca offline contro l'intelligenza artificiale. Scegli difficoltà e numero di avversari.
+          </p>
+          <button
+            onClick={() => router.push("/local")}
+            className="w-full py-3 px-6 bg-purple-500 hover:bg-purple-400 text-white font-semibold rounded-lg transition-colors"
+          >
+            Modalità Locale
+          </button>
+        </div>
+
         {/* Join Room */}
         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
           <h2 className="text-xl font-semibold text-white mb-4">Entra in una stanza</h2>

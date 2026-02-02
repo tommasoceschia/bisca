@@ -68,6 +68,7 @@ export function ScoreBoard({ players, currentRound, isBettingPhase = false, play
                 <td className={cn("py-2 text-white truncate max-w-[100px]", player.isHost && "font-bold")}>
                   {player.nickname.length > 10 ? player.nickname.slice(0, 10) + "…" : player.nickname}
                   {player.isHost && " 👑"}
+                  {player.isAI && " 🤖"}
                 </td>
                 <td className={cn("py-2 text-center font-bold text-base sm:text-lg", betStatus)}>
                   {player.bet !== null ? player.bet : (isBettingPhase ? "?" : "-")}

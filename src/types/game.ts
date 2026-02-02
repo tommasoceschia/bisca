@@ -51,6 +51,8 @@ export enum GamePhase {
 // Round structure: 5→4→3→2→1→2→3→4→5
 export const ROUND_STRUCTURE = [5, 4, 3, 2, 1, 2, 3, 4, 5] as const;
 
+export type AIDifficulty = 'easy' | 'medium' | 'hard';
+
 export interface Player {
   id: string;
   nickname: string;
@@ -61,6 +63,8 @@ export interface Player {
   score: number;
   connected: boolean;
   isHost: boolean;
+  isAI?: boolean;
+  aiDifficulty?: AIDifficulty;
 }
 
 export interface Trick {
