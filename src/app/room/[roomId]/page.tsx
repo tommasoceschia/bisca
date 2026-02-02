@@ -38,12 +38,12 @@ export default function RoomPage({ params }: PageProps) {
     const savedNickname = localStorage.getItem("bisca_nickname");
     const savedIsHost = localStorage.getItem("bisca_is_host") === "true";
 
-    // playerId unico per sessione/tab (sessionStorage)
-    let savedPlayerId = sessionStorage.getItem("bisca_player_id");
+    // Fix 8: Use localStorage for playerId to enable reconnection across tabs/refreshes
+    let savedPlayerId = localStorage.getItem("bisca_player_id");
     if (!savedPlayerId) {
-      // Genera nuovo ID basato su nickname + timestamp
+      // Generate new ID based on nickname + timestamp
       savedPlayerId = `${savedNickname}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-      sessionStorage.setItem("bisca_player_id", savedPlayerId);
+      localStorage.setItem("bisca_player_id", savedPlayerId);
     }
 
     if (!savedNickname) {
@@ -74,10 +74,12 @@ export default function RoomPage({ params }: PageProps) {
     nickname,
   });
 
-  // Reset isPlayingCard when game state changes (turn passes)
+  // Fix 5: Reset isPlayingCard only when it becomes MY turn (not when any player plays)
   useEffect(() => {
-    setIsPlayingCard(false);
-  }, [gameState?.currentPlayerId, gameState?.currentTrick.cards.length]);
+    if (gameState?.currentPlayerId === playerId) {
+      setIsPlayingCard(false);
+    }
+  }, [gameState?.currentPlayerId, playerId]);
 
   const handleCardClick = (card: Card) => {
     // Prevent any interaction if already playing a card
@@ -167,6 +169,17 @@ export default function RoomPage({ params }: PageProps) {
       {error && (
         <div className="mx-4 bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-200">
           {error}
+        </div>
+      )}
+
+      {/* Fix 10: Reconnection overlay */}
+      {!connected && !error && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-green-900/90 border border-green-500/50 rounded-xl p-6 text-center">
+            <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-white text-lg">Riconnessione in corso...</p>
+            <p className="text-green-300 text-sm mt-2">Attendere prego</p>
+          </div>
         </div>
       )}
 

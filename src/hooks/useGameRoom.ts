@@ -43,18 +43,29 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
     const socket = io(SOCKET_URL, {
       path: socketPath,
       transports: ["websocket", "polling"],
+      // Fix 9: Enable auto-reconnection with proper settings
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     });
     socketRef.current = socket;
 
+    // Track if we've been connected before (for reconnection logic)
+    let hasConnectedBefore = false;
+
     socket.on("connect", () => {
-      console.log("Connected to server");
+      console.log("Connected to server", hasConnectedBefore ? "(reconnected)" : "(first time)");
       setState((prev) => ({ ...prev, connected: true, error: null }));
 
       // Register player ID for server lookup
       socket.emit("register_player", { playerId });
 
-      // Join room
+      // Join room (works for both first connection and reconnection)
       socket.emit("join_room", { roomCode, playerId, nickname });
+
+      hasConnectedBefore = true;
     });
 
     socket.on("connect_error", (error) => {
@@ -66,9 +77,26 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
       }));
     });
 
-    socket.on("disconnect", () => {
-      console.log("Disconnected from server");
+    socket.on("disconnect", (reason) => {
+      console.log("Disconnected from server:", reason);
       setState((prev) => ({ ...prev, connected: false }));
+    });
+
+    // Socket.io reconnection events
+    socket.io.on("reconnect_attempt", (attempt) => {
+      console.log(`Reconnection attempt ${attempt}...`);
+    });
+
+    socket.io.on("reconnect_failed", () => {
+      console.log("Reconnection failed");
+      setState((prev) => ({ ...prev, error: "Impossibile riconnettersi al server" }));
+    });
+
+    // Fix 4: Handle play_card_error from server
+    socket.on("play_card_error", ({ error }) => {
+      console.error("Play card error:", error);
+      // Reset debounce so player can try again
+      playingRef.current = false;
     });
 
     // Join error handler (room full or game already started)

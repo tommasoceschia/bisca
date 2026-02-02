@@ -400,17 +400,25 @@ io.on("connection", (socket: Socket) => {
     if (!room || !room.gameState) return;
     if (room.gameState.phase !== GamePhase.ROUND_END) return;
 
-    // Add player to ready list if not already there
-    if (!room.gameState.readyForNextRound.includes(currentPlayerId)) {
-      room.gameState.readyForNextRound.push(currentPlayerId);
+    // Fix 3: Add mutex lock to prevent race conditions
+    if (room.processingAction) {
+      console.log(`[${currentRoomCode}] Action in progress, ignoring player_ready from ${currentPlayerId}`);
+      return;
     }
+    room.processingAction = true;
 
-    // Check if all players are ready
-    const allReady = room.gameState.players.every((p) =>
-      room.gameState!.readyForNextRound.includes(p.id)
-    );
+    try {
+      // Add player to ready list if not already there
+      if (!room.gameState.readyForNextRound.includes(currentPlayerId)) {
+        room.gameState.readyForNextRound.push(currentPlayerId);
+      }
 
-    if (allReady) {
+      // Fix 2: Check if all CONNECTED players are ready (ignore disconnected players)
+      const allReady = room.gameState.players
+        .filter((p) => p.connected)
+        .every((p) => room.gameState!.readyForNextRound.includes(p.id));
+
+      if (allReady) {
       // Start the next round
       const winnerId = room.gameState.lastRoundWinnerId!;
       room.gameState.currentRound++;
@@ -442,6 +450,9 @@ io.on("connection", (socket: Socket) => {
     }
 
     broadcastGameState(currentRoomCode, room.gameState);
+    } finally {
+      room.processingAction = false;
+    }
   });
 
   socket.on("play_card", ({ cardId, aceIsHigh }) => {
@@ -465,6 +476,25 @@ io.on("connection", (socket: Socket) => {
         return;
       }
 
+      // Fix 7: Validate all players have same number of cards (sanity check)
+      const handSizes = room.gameState.players.map(p => p.hand.length);
+      const expectedSize = handSizes[0];
+      const allSameSize = handSizes.every(size => size === expectedSize);
+      if (!allSameSize) {
+        console.error(`[${currentRoomCode}] CRITICAL: Hand size mismatch detected!`, handSizes);
+        // Log state for debugging but continue (don't block the game)
+      }
+
+      // Fix 6: Check if player already played this trick (prevents double plays)
+      const alreadyPlayed = room.gameState.currentTrick.cards.some(
+        (c) => c.playerId === currentPlayerId
+      );
+      if (alreadyPlayed) {
+        console.log(`[${currentRoomCode}] Player ${currentPlayerId} already played this trick`);
+        socket.emit("play_card_error", { error: "Already played this trick" });
+        return;
+      }
+
       const playerIndex = room.gameState.players.findIndex(
         (p) => p.id === currentPlayerId
       );
@@ -472,7 +502,12 @@ io.on("connection", (socket: Socket) => {
 
       const player = room.gameState.players[playerIndex];
       const cardIndex = player.hand.findIndex((c) => c.id === cardId);
-      if (cardIndex === -1) return;
+      if (cardIndex === -1) {
+        // Fix 4: Send error event instead of silent failure
+        console.log(`[${currentRoomCode}] Card ${cardId} not found in player ${currentPlayerId}'s hand`);
+        socket.emit("play_card_error", { error: "Card not found in hand" });
+        return;
+      }
 
       const card = player.hand.splice(cardIndex, 1)[0];
       const playedCard: PlayedCard = {
@@ -530,7 +565,11 @@ io.on("connection", (socket: Socket) => {
           winnerId: null,
         };
       } else {
-        // Next trick
+        // Next trick - update turn IMMEDIATELY to prevent race conditions
+        room.gameState.currentPlayerId = winnerId;
+        broadcastGameState(currentRoomCode, room.gameState);
+
+        // Delay clearing the trick display so players can see the winning card
         setTimeout(() => {
           if (room.gameState) {
             room.gameState.currentTrick = {
@@ -538,12 +577,9 @@ io.on("connection", (socket: Socket) => {
               leadSuit: null,
               winnerId: null,
             };
-            room.gameState.currentPlayerId = winnerId;
             broadcastGameState(currentRoomCode!, room.gameState);
           }
-        }, 1500); // Delay to show winning card
-
-        broadcastGameState(currentRoomCode, room.gameState);
+        }, 1500);
         return;
       }
     } else {

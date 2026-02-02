@@ -32,11 +32,11 @@ export default function LobbyPage() {
     }
     setNickname(savedNickname);
 
-    // Genera o recupera player ID (sessionStorage = unico per tab)
-    let id = sessionStorage.getItem("bisca_player_id");
+    // Fix 8: Use localStorage for playerId to enable reconnection across tabs/refreshes
+    let id = localStorage.getItem("bisca_player_id");
     if (!id) {
       id = generatePlayerId();
-      sessionStorage.setItem("bisca_player_id", id);
+      localStorage.setItem("bisca_player_id", id);
     }
     setPlayerId(id);
   }, [router]);
