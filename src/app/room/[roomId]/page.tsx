@@ -7,7 +7,6 @@ import { Hand, BlindHand } from "@/components/game/Hand";
 import { PlayArea } from "@/components/game/PlayArea";
 import { BettingPanel } from "@/components/game/BettingPanel";
 import { ScoreBoard } from "@/components/game/ScoreBoard";
-import { AceChoiceModal } from "@/components/game/AceChoiceModal";
 import { SuitRanking } from "@/components/game/SuitRanking";
 import { RoundResultModal } from "@/components/game/RoundResultModal";
 import { GamePhase, Card } from "@/types/game";
@@ -380,9 +379,28 @@ export default function RoomPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Ace of Hearts modal */}
+      {/* Ace of Hearts choice modal */}
       {pendingAceCard && (
-        <AceChoiceModal onChoice={handleAceChoice} />
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center">
+            <h2 className="text-xl font-bold text-white mb-2">Asso di Cuori</h2>
+            <p className="text-gray-300 mb-4">Come vuoi giocare l&apos;Asso?</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => handleAceChoice(true)}
+                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition-colors"
+              >
+                Alto (14)
+              </button>
+              <button
+                onClick={() => handleAceChoice(false)}
+                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold transition-colors"
+              >
+                Basso (0)
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Round Result modal */}

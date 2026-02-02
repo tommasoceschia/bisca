@@ -2,23 +2,14 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { PlayedCard, Player, SUIT_SYMBOLS, SUIT_NAMES_IT, Suit, SUIT_POWER } from "@/types/game";
+import { PlayedCard, Player, SUIT_SYMBOLS, SUIT_NAMES_IT, SUIT_POWER } from "@/types/game";
 import { Card } from "./Card";
+import { getEffectiveRank } from "@/lib/game/suit-hierarchy";
 
 interface PlayAreaProps {
   playedCards: PlayedCard[];
   players: Player[];
   winnerId?: string | null;
-}
-
-// Helper to get effective rank
-function getEffectiveRank(card: PlayedCard): number {
-  // Ace of Hearts: can be high (14) or low (0) based on player choice
-  if (card.suit === Suit.HEARTS && card.rank === 1) {
-    return card.aceIsHigh ? 14 : 0;
-  }
-  // Regular Aces (non-Hearts): always lowest (rank 1, worse than 2)
-  return card.rank;
 }
 
 export function PlayArea({ playedCards, players, winnerId }: PlayAreaProps) {
@@ -43,7 +34,7 @@ export function PlayArea({ playedCards, players, winnerId }: PlayAreaProps) {
       if (challengerPower > winnerPower) {
         winner = challenger;
       } else if (challengerPower === winnerPower) {
-        if (getEffectiveRank(challenger) > getEffectiveRank(winner)) {
+        if (getEffectiveRank(challenger, challenger.aceIsHigh) > getEffectiveRank(winner, winner.aceIsHigh)) {
           winner = challenger;
         }
       }

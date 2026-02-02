@@ -43,7 +43,6 @@ export enum GamePhase {
   WAITING = "waiting",
   BETTING = "betting",
   PLAYING = "playing",
-  ACE_CHOICE = "ace_choice",
   TRICK_END = "trick_end",
   ROUND_END = "round_end",
   GAME_END = "game_end",
@@ -81,8 +80,6 @@ export interface GameState {
   currentPlayerId: string | null;
   roundLeaderId: string | null;
   totalBets: number;
-  aceOfHeartsPending: boolean;
-  aceOfHeartsPlayerId: string | null;
   readyForNextRound: string[]; // Player IDs who clicked ready
   lastRoundWinnerId: string | null; // Who won the last trick (leads next round)
   playOrder: string[]; // Order of play (first player leads, rotates after each trick)

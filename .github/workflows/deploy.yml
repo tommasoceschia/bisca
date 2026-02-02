@@ -45,13 +45,13 @@ jobs:
       - name: Create .env file
         run: |
           echo "NEXT_PUBLIC_BASE_PATH=${{ steps.vars.outputs.BASE_PATH }}" > .env
-          echo "NEXT_PUBLIC_SOCKET_URL=http://77.42.70.58" >> .env
+          echo "NEXT_PUBLIC_SOCKET_URL=http://${{ secrets.SERVER_IP }}" >> .env
 
       - name: Build application
         run: npm run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.vars.outputs.BASE_PATH }}
-          NEXT_PUBLIC_SOCKET_URL: http://77.42.70.58
+          NEXT_PUBLIC_SOCKET_URL: http://${{ secrets.SERVER_IP }}
 
       - name: Prepare deployment package
         run: |
@@ -129,7 +129,7 @@ jobs:
           set +a
 
           # Start WebSocket server first (CLIENT_URL is origin only for CORS)
-          PORT=$WS_PORT CLIENT_URL=http://77.42.70.58 pm2 start ./node_modules/.bin/tsx \
+          PORT=\$WS_PORT CLIENT_URL=http://${{ secrets.SERVER_IP }} pm2 start ./node_modules/.bin/tsx \
             --name $PM2_SERVER \
             -- server/index.ts
 
@@ -194,6 +194,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
           STATUS: ${{ job.status }}
           ENV_NAME: ${{ steps.vars.outputs.ENV }}
           ENV_UPPER: ${{ steps.vars.outputs.ENV_UPPER }}
@@ -238,7 +239,7 @@ jobs:
           ${CHANGES}
 
           <a href=\"https://github.com/${REPO}/compare/${PREV_SHA}...${COMMIT_SHA}\">View All Changes</a>
-          <b>URL:</b> http://77.42.70.58${BASE_PATH}/"
+          <b>URL:</b> http://${SERVER_IP}${BASE_PATH}/"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \

@@ -1,7 +1,21 @@
 {
   "name": "bisca",
   "version": "0.1.0",
-  "private": true,
+  "description": "Real-time multiplayer Bisca card game",
+  "author": "Tommaso Ceschia",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tommasoceschia/bisca.git"
+  },
+  "keywords": [
+    "bisca",
+    "card-game",
+    "multiplayer",
+    "socket.io",
+    "nextjs",
+    "italian-games"
+  ],
   "scripts": {
     "dev": "next dev",
     "dev:server": "tsx watch server/index.ts",

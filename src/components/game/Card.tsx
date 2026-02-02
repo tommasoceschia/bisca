@@ -111,25 +111,3 @@ export function Card({
   );
 }
 
-// Card back component for hidden cards
-export function CardBack({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const sizeClasses = {
-    sm: "w-14 h-20 sm:w-16 sm:h-24",
-    md: "w-16 h-24 sm:w-20 sm:h-28 md:w-24 md:h-32",
-    lg: "w-20 h-28 sm:w-24 sm:h-32 md:w-28 md:h-36 lg:w-32 lg:h-44",
-  };
-
-  return (
-    <div
-      className={cn(
-        sizeClasses[size],
-        "relative rounded-lg shadow-md border-2 border-blue-800",
-        "bg-gradient-to-br from-blue-700 to-blue-900",
-        "flex items-center justify-center"
-      )}
-    >
-      <div className="absolute inset-1 sm:inset-2 border border-blue-400/30 rounded" />
-      <span className="text-blue-300 text-xl sm:text-2xl">♠</span>
-    </div>
-  );
-}

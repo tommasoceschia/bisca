@@ -17,39 +17,6 @@ export function calculateRoundScore(bet: number, tricksWon: number): number {
 }
 
 /**
- * Calcola i punteggi di fine round per tutti i giocatori.
- */
-export function calculateRoundScores(
-  players: Array<{ id: string; bet: number; tricksWon: number }>
-): Record<string, number> {
-  const scores: Record<string, number> = {};
-
-  for (const player of players) {
-    scores[player.id] = calculateRoundScore(player.bet, player.tricksWon);
-  }
-
-  return scores;
-}
-
-/**
- * Determina il vincitore della partita.
- * Ritorna l'ID del giocatore con il punteggio più alto.
- */
-export function determineWinner(scores: Record<string, number>): string {
-  let winnerId = "";
-  let highestScore = -Infinity;
-
-  for (const [playerId, score] of Object.entries(scores)) {
-    if (score > highestScore) {
-      highestScore = score;
-      winnerId = playerId;
-    }
-  }
-
-  return winnerId;
-}
-
-/**
  * Ordina i giocatori per punteggio (dal più alto al più basso).
  */
 export function rankPlayers(
