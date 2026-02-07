@@ -35,7 +35,7 @@ jobs:
             echo "ENV_UPPER=PROD" >> $GITHUB_OUTPUT
             echo "WEB_PORT=3007" >> $GITHUB_OUTPUT
             echo "WS_PORT=3008" >> $GITHUB_OUTPUT
-            echo "BASE_PATH=/prod/bisca" >> $GITHUB_OUTPUT
+            echo "BASE_PATH=/bisca" >> $GITHUB_OUTPUT
           else
             echo "ENV=test" >> $GITHUB_OUTPUT
             echo "ENV_UPPER=TEST" >> $GITHUB_OUTPUT
@@ -50,13 +50,13 @@ jobs:
       - name: Create .env file
         run: |
           echo "NEXT_PUBLIC_BASE_PATH=${{ steps.vars.outputs.BASE_PATH }}" > .env
-          echo "NEXT_PUBLIC_SOCKET_URL=http://${{ secrets.SERVER_IP }}" >> .env
+          echo "NEXT_PUBLIC_SOCKET_URL=https://blooomy.it" >> .env
 
       - name: Build application
         run: pnpm run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.vars.outputs.BASE_PATH }}
-          NEXT_PUBLIC_SOCKET_URL: http://${{ secrets.SERVER_IP }}
+          NEXT_PUBLIC_SOCKET_URL: https://blooomy.it
 
       - name: Prepare deployment package
         run: |
@@ -155,16 +155,16 @@ jobs:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          APP_ENV: ${{ steps.vars.outputs.ENV }}
           WEB_PORT: ${{ steps.vars.outputs.WEB_PORT }}
           WS_PORT: ${{ steps.vars.outputs.WS_PORT }}
+          BASE_PATH: ${{ steps.vars.outputs.BASE_PATH }}
         run: |
           export SSHPASS
           sshpass -e ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
-            if ! grep -q 'location /$APP_ENV/bisca' /etc/nginx/sites-enabled/default; then
+            if ! grep -q 'location $BASE_PATH' /etc/nginx/sites-enabled/default; then
               sed -i '/# Default location/i \\
-                # bisca $APP_ENV WebSocket (port $WS_PORT)\\
-                location /$APP_ENV/bisca/socket.io/ {\\
+                # bisca WebSocket (port $WS_PORT)\\
+                location $BASE_PATH/socket.io/ {\\
                     proxy_pass http://127.0.0.1:$WS_PORT/socket.io/;\\
                     proxy_http_version 1.1;\\
                     proxy_set_header Upgrade \\\$http_upgrade;\\
@@ -177,8 +177,8 @@ jobs:
                     proxy_read_timeout 86400;\\
                 }\\
                 \\
-                # bisca $APP_ENV frontend (port $WEB_PORT)\\
-                location /$APP_ENV/bisca {\\
+                # bisca frontend (port $WEB_PORT)\\
+                location $BASE_PATH {\\
                     proxy_pass http://127.0.0.1:$WEB_PORT;\\
                     proxy_http_version 1.1;\\
                     proxy_set_header Upgrade \\\$http_upgrade;\\
@@ -244,7 +244,7 @@ jobs:
           ${CHANGES}
 
           <a href=\"https://github.com/${REPO}/compare/${PREV_SHA}...${COMMIT_SHA}\">View All Changes</a>
-          <b>URL:</b> http://${SERVER_IP}${BASE_PATH}/"
+          <b>URL:</b> https://blooomy.it${BASE_PATH}/"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
