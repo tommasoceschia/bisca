@@ -18,8 +18,9 @@ export function validateBet(
   }
 
   // La somma parziale non può MAI essere uguale al numero di carte
+  // Eccezione: nel round cieco (1 carta) non c'è restrizione
   const newTotal = currentTotalBets + bet;
-  if (newTotal === cardsPerPlayer) {
+  if (cardsPerPlayer > 1 && newTotal === cardsPerPlayer) {
     return {
       valid: false,
       error: `Non puoi scommettere ${bet}: la somma diventerebbe ${cardsPerPlayer}`,
@@ -58,6 +59,11 @@ export function getForbiddenBet(
   cardsPerPlayer: number,
   currentTotalBets: number
 ): number | null {
+  // Nel round cieco (1 carta) non c'è scommessa proibita
+  if (cardsPerPlayer === 1) {
+    return null;
+  }
+
   const forbidden = cardsPerPlayer - currentTotalBets;
 
   // Se la scommessa proibita è nel range valido, ritornala
