@@ -15,7 +15,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-green-800 to-green-900 flex flex-col items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-b from-green-800 to-green-900 flex flex-col items-center justify-center pt-[calc(var(--sai-top)_+_1rem)] pb-[calc(var(--sai-bottom)_+_1rem)] pl-[calc(var(--sai-left)_+_1rem)] pr-[calc(var(--sai-right)_+_1rem)]">
       <div className="text-center mb-12">
         <h1 className="text-6xl font-bold text-white mb-4">Bisca</h1>
         <p className="text-green-200 text-xl">Gioco di Carte Online</p>

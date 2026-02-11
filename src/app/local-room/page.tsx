@@ -149,9 +149,9 @@ export default function LocalRoomPage() {
   const isAITurn = currentPlayer?.isAI;
 
   return (
-    <main className="h-screen bg-gradient-to-b from-green-800 to-green-900 flex flex-col overflow-hidden">
+    <main className="h-screen-safe bg-gradient-to-b from-green-800 to-green-900 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="p-2 sm:p-4 flex justify-between items-center shrink-0">
+      <header className="pt-[calc(var(--sai-top)_+_0.5rem)] sm:pt-[calc(var(--sai-top)_+_1rem)] px-2 sm:px-4 pb-2 sm:pb-4 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={handleExit}
@@ -272,7 +272,7 @@ export default function LocalRoomPage() {
             )}
 
             {/* My hand */}
-            <div className="p-2 sm:p-4 bg-black/20 shrink-0">
+            <div className="pt-2 sm:pt-4 pb-[calc(var(--sai-bottom)_+_0.5rem)] sm:pb-[calc(var(--sai-bottom)_+_1rem)] px-2 sm:px-4 bg-black/20 shrink-0">
               {gameState.isBlindRound ? (
                 <BlindHand
                   cardCount={myPlayer?.hand.length || 0}

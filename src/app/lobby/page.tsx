@@ -65,7 +65,7 @@ export default function LobbyPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-green-800 to-green-900 p-4">
+    <main className="min-h-screen bg-gradient-to-b from-green-800 to-green-900 pt-[calc(var(--sai-top)_+_1rem)] pb-[calc(var(--sai-bottom)_+_1rem)] pl-[calc(var(--sai-left)_+_1rem)] pr-[calc(var(--sai-right)_+_1rem)]">
       <div className="max-w-2xl mx-auto pt-12">
         {/* Header */}
         <div className="text-center mb-12">
