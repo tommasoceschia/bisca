@@ -121,20 +121,27 @@ jobs:
             -e 'ssh -o StrictHostKeyChecking=no' \
             deploy-package/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
 
-          # Install tsx and start applications with PM2
+          # Install global tools and start applications with PM2
           sshpass -e ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" bash << REMOTESH
           cd $DEPLOY_PATH
 
-          # Install tsx for running TypeScript server
-          npm install tsx --save-dev
+          # Install tsx globally if not present
+          command -v tsx >/dev/null 2>&1 || npm install -g tsx
+
+          # Install socket.io in isolated directory (standalone node_modules is incompatible with npm)
+          mkdir -p ws-server
+          cd ws-server
+          npm init -y >/dev/null 2>&1
+          npm install socket.io
+          cd $DEPLOY_PATH
 
           # Source env
           set -a
           source .env
           set +a
 
-          # Start WebSocket server first (CLIENT_URL is origin only for CORS)
-          PORT=\$WS_PORT CLIENT_URL=http://${{ secrets.SERVER_IP }} pm2 start ./node_modules/.bin/tsx \
+          # Start WebSocket server (NODE_PATH lets it find socket.io from isolated dir)
+          NODE_PATH=$DEPLOY_PATH/ws-server/node_modules PORT=$WS_PORT CLIENT_URL=https://blooomy.it pm2 start tsx \
             --name $PM2_SERVER \
             -- server/index.ts
 
