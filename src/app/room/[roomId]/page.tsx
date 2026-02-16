@@ -9,7 +9,8 @@ import { BettingPanel } from "@/components/game/BettingPanel";
 import { ScoreBoard } from "@/components/game/ScoreBoard";
 import { SuitRanking } from "@/components/game/SuitRanking";
 import { RoundResultModal } from "@/components/game/RoundResultModal";
-import { GamePhase, Card } from "@/types/game";
+import { GamePhase, Card as CardType } from "@/types/game";
+import { Card } from "@/components/game/Card";
 import { isAceOfHearts } from "@/lib/game/suit-hierarchy";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +29,7 @@ export default function RoomPage({ params }: PageProps) {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // Card waiting for ace choice
-  const [pendingAceCard, setPendingAceCard] = useState<Card | null>(null);
+  const [pendingAceCard, setPendingAceCard] = useState<CardType | null>(null);
 
   // Prevent double card plays - cards disabled immediately on click
   const [isPlayingCard, setIsPlayingCard] = useState(false);
@@ -75,12 +76,12 @@ export default function RoomPage({ params }: PageProps) {
 
   // Fix 5: Reset isPlayingCard only when it becomes MY turn (not when any player plays)
   useEffect(() => {
-    if (gameState?.currentPlayerId === playerId) {
+    if (gameState?.currentPlayerId === playerId && gameState?.phase === GamePhase.PLAYING) {
       setIsPlayingCard(false);
     }
-  }, [gameState?.currentPlayerId, playerId]);
+  }, [gameState?.currentPlayerId, gameState?.currentTrick?.cards?.length, gameState?.phase, playerId]);
 
-  const handleCardClick = (card: Card) => {
+  const handleCardClick = (card: CardType) => {
     // Prevent any interaction if already playing a card
     if (isPlayingCard) return;
     if (!gameState || gameState.currentPlayerId !== playerId) return;
@@ -282,6 +283,26 @@ export default function RoomPage({ params }: PageProps) {
                 playOrder={gameState.playOrder}
               />
             </div>
+
+            {/* Opponents' cards in blind round */}
+            {gameState.isBlindRound && (
+              <div className="flex justify-center gap-3 sm:gap-4 px-2 py-1 sm:py-2 shrink-0">
+                {gameState.players
+                  .filter((p) => p.id !== playerId && p.hand.length > 0)
+                  .map((p) => (
+                    <div key={p.id} className="flex flex-col items-center gap-1">
+                      <Card
+                        card={p.hand[0]}
+                        size="sm"
+                        disabled
+                      />
+                      <span className="text-green-200 text-[10px] sm:text-xs truncate max-w-[60px]">
+                        {p.nickname}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            )}
 
             {/* Play area */}
             <div className="flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0">
