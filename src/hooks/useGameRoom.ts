@@ -20,8 +20,31 @@ interface RoomState {
   connected: boolean;
 }
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+/**
+ * Resolve the Socket.IO server URL.
+ * Priority:
+ *  1. Explicit NEXT_PUBLIC_SOCKET_URL override (custom setups).
+ *  2. Local development: the WS server runs on :3001 while Next runs on :3000.
+ *  3. Production: the same origin that served the page, so the socket URL
+ *     always follows the frontend's domain (domain-agnostic — a domain
+ *     migration no longer requires a rebuild). Nginx proxies
+ *     `<basePath>/socket.io/` to the WebSocket server on the same host.
+ */
+function resolveSocketUrl(): string {
+  if (process.env.NEXT_PUBLIC_SOCKET_URL) {
+    return process.env.NEXT_PUBLIC_SOCKET_URL;
+  }
+  if (typeof window !== "undefined") {
+    const { hostname, origin } = window.location;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:3001";
+    }
+    return origin;
+  }
+  return "http://localhost:3001";
+}
 
 export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions) {
   const [state, setState] = useState<RoomState>({
@@ -40,6 +63,7 @@ export function useGameRoom({ roomCode, playerId, nickname }: UseGameRoomOptions
   useEffect(() => {
     // Connect to socket server with custom path for basePath support
     const socketPath = BASE_PATH ? `${BASE_PATH}/socket.io/` : "/socket.io/";
+    const SOCKET_URL = resolveSocketUrl();
     const socket = io(SOCKET_URL, {
       path: socketPath,
       transports: ["websocket", "polling"],

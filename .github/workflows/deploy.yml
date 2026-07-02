@@ -50,13 +50,15 @@ jobs:
       - name: Create .env file
         run: |
           echo "NEXT_PUBLIC_BASE_PATH=${{ steps.vars.outputs.BASE_PATH }}" > .env
-          echo "NEXT_PUBLIC_SOCKET_URL=https://tommasoceschia.com" >> .env
+          # NEXT_PUBLIC_SOCKET_URL is intentionally left unset: the client
+          # connects to the same origin that served the page (see
+          # resolveSocketUrl in src/hooks/useGameRoom.ts). This keeps the
+          # build domain-agnostic — a domain migration needs no rebuild.
 
       - name: Build application
         run: pnpm run build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.vars.outputs.BASE_PATH }}
-          NEXT_PUBLIC_SOCKET_URL: https://tommasoceschia.com
 
       - name: Prepare deployment package
         run: |
