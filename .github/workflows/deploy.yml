@@ -113,13 +113,18 @@ jobs:
         run: |
           SSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
 
-          # Create deployment directory and stop existing processes
+          # bisca non gira più da root (30/09/2026): ha un utente di servizio,
+          # «bisca», con un suo PM2. Root prepara la cartella e copia i file;
+          # installazione e processi sono dell'utente.
           $SSH "$SSH_USER@$SSH_HOST" "
+            id bisca >/dev/null 2>&1 || useradd --system --create-home --home-dir /home/bisca --shell /usr/sbin/nologin bisca
             mkdir -p $DEPLOY_PATH
-            pm2 stop $PM2_WEB 2>/dev/null || true
+            # i processi di prima (root, fino al 30/09) e quelli dell'utente
             pm2 delete $PM2_WEB 2>/dev/null || true
-            pm2 stop $PM2_SERVER 2>/dev/null || true
             pm2 delete $PM2_SERVER 2>/dev/null || true
+            pm2 save >/dev/null 2>&1 || true
+            sudo -u bisca -H pm2 delete $PM2_WEB 2>/dev/null || true
+            sudo -u bisca -H pm2 delete $PM2_SERVER 2>/dev/null || true
             rm -rf $DEPLOY_PATH/*
           "
 
@@ -128,40 +133,25 @@ jobs:
             -e "$SSH" \
             deploy-package/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
 
-          # Install global tools and start applications with PM2
+          # Start applications with the bisca user's PM2
           $SSH "$SSH_USER@$SSH_HOST" bash << REMOTESH
-          cd $DEPLOY_PATH
-
-          # Install tsx globally if not present
+          set -e
+          # tsx globale: lo installa root, una volta sola
           command -v tsx >/dev/null 2>&1 || npm install -g tsx
+          chown -R bisca:bisca $DEPLOY_PATH
 
-          # Install socket.io in isolated directory (standalone node_modules is incompatible with npm)
-          mkdir -p ws-server
-          cd ws-server
-          npm init -y >/dev/null 2>&1
-          npm install socket.io
-          cd $DEPLOY_PATH
+          # socket.io in una cartella a parte (il node_modules dello standalone non va con npm)
+          sudo -u bisca -H bash -c "cd $DEPLOY_PATH && mkdir -p ws-server && cd ws-server && npm init -y >/dev/null 2>&1 && npm install socket.io >/dev/null 2>&1"
 
-          # Source env
-          set -a
-          source .env
-          set +a
+          # WebSocket server (NODE_PATH trova socket.io) e frontend Next, come utente bisca
+          sudo -u bisca -H bash -c "cd $DEPLOY_PATH && set -a && . ./.env && set +a && NODE_PATH=$DEPLOY_PATH/ws-server/node_modules PORT=$WS_PORT CLIENT_URL=https://tommasoceschia.com pm2 start tsx --name $PM2_SERVER -- server/index.ts && PORT=$WEB_PORT NODE_ENV=production pm2 start server.js --name $PM2_WEB && pm2 save"
+          # riavvio automatico al boot per il PM2 dell'utente (idempotente)
+          env PATH="\$PATH" pm2 startup systemd -u bisca --hp /home/bisca >/dev/null 2>&1 || true
 
-          # Start WebSocket server (NODE_PATH lets it find socket.io from isolated dir)
-          NODE_PATH=$DEPLOY_PATH/ws-server/node_modules PORT=$WS_PORT CLIENT_URL=https://tommasoceschia.com pm2 start tsx \
-            --name $PM2_SERVER \
-            -- server/index.ts
-
-          # Start Next.js frontend
-          PORT=$WEB_PORT NODE_ENV=production pm2 start server.js --name $PM2_WEB
-
-          # Wait and check status
           sleep 3
-          pm2 list
-          pm2 logs $PM2_WEB --lines 20 --nostream || true
-          pm2 logs $PM2_SERVER --lines 20 --nostream || true
-
-          pm2 save
+          sudo -u bisca -H pm2 list
+          sudo -u bisca -H pm2 logs $PM2_WEB --lines 20 --nostream || true
+          sudo -u bisca -H pm2 logs $PM2_SERVER --lines 20 --nostream || true
           REMOTESH
 
       - name: Configure Nginx
