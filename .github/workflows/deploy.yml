@@ -91,12 +91,17 @@ jobs:
           echo "=== Deployment package structure ==="
           ls -la deploy-package/
 
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
+      # Dal 27/09/2026 la VM accetta solo chiavi SSH: la password non entra più.
+      - name: Setup SSH key
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
       - name: Deploy to server
         env:
-          SSHPASS: ${{ secrets.SSH_PASSWORD }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           DEPLOY_PATH: /var/www/${{ steps.vars.outputs.ENV }}/bisca
@@ -106,10 +111,10 @@ jobs:
           WS_PORT: ${{ steps.vars.outputs.WS_PORT }}
           BASE_PATH: ${{ steps.vars.outputs.BASE_PATH }}
         run: |
-          export SSHPASS
+          SSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=no"
 
           # Create deployment directory and stop existing processes
-          sshpass -e ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
+          $SSH "$SSH_USER@$SSH_HOST" "
             mkdir -p $DEPLOY_PATH
             pm2 stop $PM2_WEB 2>/dev/null || true
             pm2 delete $PM2_WEB 2>/dev/null || true
@@ -119,12 +124,12 @@ jobs:
           "
 
           # Copy files to server
-          sshpass -e rsync -avz --delete \
-            -e 'ssh -o StrictHostKeyChecking=no' \
+          rsync -avz --delete \
+            -e "$SSH" \
             deploy-package/ "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
 
           # Install global tools and start applications with PM2
-          sshpass -e ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" bash << REMOTESH
+          $SSH "$SSH_USER@$SSH_HOST" bash << REMOTESH
           cd $DEPLOY_PATH
 
           # Install tsx globally if not present
@@ -161,15 +166,13 @@ jobs:
 
       - name: Configure Nginx
         env:
-          SSHPASS: ${{ secrets.SSH_PASSWORD }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           WEB_PORT: ${{ steps.vars.outputs.WEB_PORT }}
           WS_PORT: ${{ steps.vars.outputs.WS_PORT }}
           BASE_PATH: ${{ steps.vars.outputs.BASE_PATH }}
         run: |
-          export SSHPASS
-          sshpass -e ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
+          ssh -i "$HOME/.ssh/deploy_key" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
             if ! grep -q 'location $BASE_PATH' /etc/nginx/sites-enabled/default; then
               sed -i '/# Default location/i \\
                 # bisca WebSocket (port $WS_PORT)\\
